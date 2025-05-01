@@ -1,6 +1,7 @@
 'use client';
 
 import { Facebook, Twitter, Instagram, Mail } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Footer() {
   return (
@@ -18,7 +19,7 @@ export default function Footer() {
         <div>
           <h4 className="text-lg font-semibold text-white mb-3">Explore</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="/" className="hover:text-white">Home</a></li>
+            <li><Link href="/" className="hover:text-white">Home</Link></li>
             <li><a href="#services" className="hover:text-white">Services</a></li>
             <li><a href="#portfolio" className="hover:text-white">Portfolio</a></li>
             <li><a href="#contact" className="hover:text-white">Contact</a></li>
