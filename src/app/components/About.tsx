@@ -10,7 +10,7 @@ export default function About() {
         </p>
 
         <p className="text-gray-700 mb-4">
-          We`&apos;`re a creative studio specializing in web design, development, branding, and digital strategy. Whether you`&apos;`re a startup, an artist, or an established business, we help bring your ideas to life through intuitive design and smart technology.
+          We&apos;re a creative studio specializing in web design, development, branding, and digital strategy. Whether you&apos;re a startup, an artist, or an established business, we help bring your ideas to life through intuitive design and smart technology.
         </p>
 
         <p className="text-gray-700 mb-6">
@@ -21,7 +21,7 @@ export default function About() {
           href="#contact"
           className="inline-block mt-4 px-6 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition"
         >
-          Let`&apos;`s Work Together
+          Let&apos;s Work Together
         </a>
       </div>
     </section>

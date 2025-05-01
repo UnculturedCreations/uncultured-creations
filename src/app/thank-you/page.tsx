@@ -21,7 +21,7 @@ export default function ThankYou() {
 
       <h1 className="text-4xl font-bold mb-4 text-purple-600">Thank You!</h1>
       <p className="text-lg max-w-md mb-6 text-gray-700">
-        Your message has been received. We`&apos;`ll get back to you shortly.
+        Your message has been received. We&apos;ll get back to you shortly.
       </p>
       <Link
         href="/"
