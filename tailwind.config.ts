@@ -9,10 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-sans)', 'Inter', 'sans-serif'],
-        display: ['var(--font-display)', 'sans-serif'],
-        mono: ['var(--font-geist-mono)', 'monospace'],
-      },
+        sans: ['var(--font-sans)'],
+        display: ['var(--font-display)'],
+        mono: ['var(--font-geist-mono)'],
+      },      
     },
   },
   plugins: [],
