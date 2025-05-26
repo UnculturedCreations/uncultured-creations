@@ -1,4 +1,6 @@
-// components/ProjectCard.tsx
+'use client';
+
+import { useState } from "react";
 import Image from "next/image";
 
 type Project = {
@@ -9,8 +11,16 @@ type Project = {
 };
 
 export default function ProjectCard({ title, description, image, link }: Project) {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleDescription = () => setExpanded(!expanded);
+
+  const maxChars = 37;
+  const isLong = description.length > maxChars;
+  const preview = isLong ? description.slice(0, maxChars) + "..." : description;
+
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition">
+    <div className="w-[280px] bg-contrast rounded-2xl overflow-hidden hover:shadow-[0_0_10px_1.5px_#0066FF] transition flex-shrink-0 flex flex-col">
       <Image
         src={image}
         alt={title}
@@ -18,14 +28,27 @@ export default function ProjectCard({ title, description, image, link }: Project
         height={400}
         className="w-full h-48 object-cover"
       />
-      <div className="p-4">
-        <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-gray-600 text-sm mb-4">{description}</p>
+      <div className="p-4 flex flex-col h-full">
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
+
+        <p className="text-gray-600 text-sm mb-2 brea-words">
+          {expanded || !isLong ? description : preview}
+        </p>
+
+        {isLong && (
+          <button
+            onClick={toggleDescription}
+            className="text-accent text-sm font-medium hover:underline mb-2"
+          >
+            {expanded ? "Show less" : "Read more"}
+          </button>
+        )}
+
         <a
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-purple-600 font-medium hover:underline"
+          className="text-accent font-medium hover:underline"
         >
           View Project →
         </a>

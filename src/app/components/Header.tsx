@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Info, Briefcase, Image, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Header() {
@@ -10,24 +10,24 @@ export default function Header() {
   const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
-    <header className="fixed top-0 w-full bg-white shadow z-50">
+    <header className="fixed top-0 w-full bg-gray-900 z-50 font-sans">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center max-w-7xl">
         {/* Logo / Brand Name */}
         <Link href="/">
-          <span className="text-xl font-bold text-gray-800">Uncultured Creations</span>
+          <span className="text-xl font-bold text-contrast">Uncultured Creations</span>
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex space-x-6 text-gray-700 font-medium">
-          <a href="#about" className="hover:text-purple-600">About</a>
-          <a href="#services" className="hover:text-purple-600">Services</a>
-          <a href="#portfolio" className="hover:text-purple-600">Portfolio</a>
-          <a href="#contact" className="hover:text-purple-600">Contact</a>
+        <nav className="hidden md:flex space-x-6 text-contrast font-medium">
+          <a href="#about" className="flex items-center hover:text-accent"><Info className="w-4 h-4 mr-2" />About</a>
+          <a href="#services" className="flex items-center hover:text-accent"><Briefcase className="w-4 h-4 mr-2" />Services</a>
+          <a href="#portfolio" className="flex items-center hover:text-accent"><Image className="w-4 h-4 mr-2" />Portfolio</a>
+          <a href="#contact" className="flex items-center hover:text-accent"><Phone className="w-4 h-4 mr-2" />Contact</a>
         </nav>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-gray-800"
+          className="md:hidden text-contrast"
           onClick={toggleMenu}
           aria-label="Toggle menu"
         >
@@ -37,11 +37,11 @@ export default function Header() {
 
       {/* Mobile Nav */}
       {isOpen && (
-        <div className="md:hidden bg-white shadow px-4 py-4 space-y-4">
-          <a href="#about" className="block text-gray-700 hover:text-purple-600">About</a>
-          <a href="#services" className="block text-gray-700 hover:text-purple-600">Services</a>
-          <a href="#portfolio" className="block text-gray-700 hover:text-purple-600">Portfolio</a>
-          <a href="#contact" className="block text-gray-700 hover:text-purple-600">Contact</a>
+        <div className="md:hidden bg-contrast shadow px-4 py-4 space-y-4">
+          <a href="#about" className="flex items-center text-base hover:text-accent"><Info className="w-4 h-4 mr-2" />About</a>
+          <a href="#services" className="flex items-center text-base hover:text-accent"><Briefcase className="w-4 h-4 mr-2" />Services</a>
+          <a href="#portfolio" className="flex items-center text-base hover:text-accent"><Image className="w-4 h-4 mr-2" />Portfolio</a>
+          <a href="#contact" className="flex items-center text-base hover:text-accent"><Phone className="w-4 h-4 mr-2" />Contact</a>
         </div>
       )}
     </header>
