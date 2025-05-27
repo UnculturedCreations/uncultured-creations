@@ -23,6 +23,7 @@ export default function Footer() {
             <li><a href="#services" className="flex items-center hover:text-accent"><Briefcase className="w-4 h-4 mr-2" />Services</a></li>
             <li><a href="#portfolio" className="flex items-center hover:text-accent"><Image className="w-4 h-4 mr-2" />Portfolio</a></li>
             <li><a href="#contact" className="flex items-center hover:text-accent"><Phone className="w-4 h-4 mr-2" />Contact</a></li>
+            <li><a href="about" className="flex items-center hover:text-accent"><Info className="w-4 h-4 mr-2" />About</a></li>
           </ul>
         </div>
 
