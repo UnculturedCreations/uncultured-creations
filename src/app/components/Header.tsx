@@ -13,7 +13,14 @@ export default function Header() {
     <header className="fixed top-0 w-full bg-gray-900 z-50 font-sans">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center max-w-7xl">
         {/* Logo / Brand Name */}
-        <Link href="/">
+        <Link href="/" className="flex items-center space-x-2" aria-label="Go to homepage">
+          <Image
+            src="/ucLogo.png"
+            alt="Uncultured Creations Logo"
+            width={32}
+            height={30}
+            priority
+          />
           <span className="text-xl font-bold text-contrast">Uncultured Creations</span>
         </Link>
 
