@@ -18,7 +18,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 w-full bg-gray-900 z-50 font-sans">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center max-w-7xl">
+      <div className="container mx-auto px-4 py-2 flex justify-between items-center max-w-7xl">
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center space-x-2" aria-label="Go to homepage">
           <Image
