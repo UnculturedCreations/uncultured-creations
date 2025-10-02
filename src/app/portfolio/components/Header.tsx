@@ -17,18 +17,18 @@ export default function Header() {
   const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
-    <header className="fixed top-0 w-full bg-gray-900 z-50 font-sans">
+    <header className="fixed top-0 w-full z-50 font-sans">
       <div className="container mx-auto px-4 py-2 flex justify-between items-center max-w-7xl">
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center space-x-2" aria-label="Go to homepage">
           <Image
-            src="/images/ucLogo.png"
+            src="/images/UC-Logo.png"
             alt="Uncultured Creations Logo"
             width={53}
             height={50}
             priority
           />
-          <span className="text-xl font-bold text-contrast">Uncultured Creations</span>
+          <span className="text-xl mt-3 font-bold text-contrast">Uncultured Creations</span>
         </Link>
 
         {/* Desktop Navigation */}
