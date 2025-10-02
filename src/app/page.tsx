@@ -68,12 +68,12 @@ export default function Home() {
       />
 
       <motion.div
-        className="absolute top-25 left-1/4 w-40 h-40 bg-purple-500 rounded-full blur-1xl opacity-20 z--5"
+        className="absolute top-25 left-1/4 w-40 h-40 bg-contrast rounded-full blur-1xl opacity-20 z--5"
         animate={{ x: [0, 200, 0], y: [0, 500, 0] }}
         transition={{ duration: 25, repeat: Infinity }}
       />
       <motion.div
-        className="absolute bottom-25 left-80 w-40 h-40 bg-accent rounded-full blur-1xl opacity-20 z--5"
+        className="absolute bottom-25 left-80 w-40 h-40 bg-purple-500 rounded-full blur-1xl opacity-20 z--5"
         animate={{ x: [0, -230, 0], y: [0, 490, 0] }}
         transition={{ duration: 35, repeat: Infinity }}
       />
@@ -120,7 +120,7 @@ export default function Home() {
           className="flex-1 text-center"
         >
           <Image
-            src={"/images/UC-Logo.png"}
+            src={"/images/landing/logo-temp.png"}
             alt="Uncultured Creations Logo"
             width={300}
             height={300}

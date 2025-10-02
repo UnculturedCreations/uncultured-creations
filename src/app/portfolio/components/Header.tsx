@@ -22,13 +22,13 @@ export default function Header() {
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center space-x-2" aria-label="Go to homepage">
           <Image
-            src="/images/UC-Logo.png"
+            src="/images/landing/logo-temp.png"
             alt="Uncultured Creations Logo"
             width={53}
             height={50}
             priority
           />
-          <span className="text-xl mt-3 font-bold text-contrast">Uncultured Creations</span>
+          <span className="text-xl font-bold text-contrast">Uncultured Creations</span>
         </Link>
 
         {/* Desktop Navigation */}
