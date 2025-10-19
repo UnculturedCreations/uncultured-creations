@@ -24,7 +24,7 @@ export default function Header() {
           <Image
             src="/images/landing/logo-temp.png"
             alt="Uncultured Creations Logo"
-            width={53}
+            width={50}
             height={50}
             priority
           />

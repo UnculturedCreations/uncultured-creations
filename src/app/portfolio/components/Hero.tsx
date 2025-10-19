@@ -19,10 +19,10 @@ export default function Hero() {
         <p className="text-xl md:text-2.5xl text-center text-contrast max-w-xl mx-auto mb-12">
           C  R  E  A  T  I  O  N  S
         </p>
-        <p className="text-6xl md:text-8xl text-center text-accent max-w-xl mx-auto mb-0">
+        <p className="text-6xl md:text-8xl text-center text-accent max-w-xl mx-auto mb-0 bg-gradient-to-r from-accent to-purple-500 bg-clip-text text-transparent font-bold animate-gradient-x">
           BRANDING
         </p>
-        <p className="text-6xl md:text-8xl text-center text-accent max-w-4xl mx-auto mb-8">
+        <p className="text-6xl md:text-8xl text-center text-accent max-w-4xl mx-auto mb-8 bg-gradient-to-r from-accent to-purple-500 bg-clip-text text-transparent font-bold animate-gradient-x">
           FOR THE BRAVE
         </p>
         <a
