@@ -65,7 +65,7 @@ export default function ComingSoon({ title, intro, status, upcoming, image }: Co
           <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-contrast/10 pt-6">
             <Link
               href="/"
-              className={`rounded-lg bg-accent px-5 py-3 font-medium text-contrast transition-colors hover:bg-accent/85 motion-reduce:transition-none ${focusRing}`}
+              className={`rounded-lg bg-accent px-5 py-3 font-medium text-white transition-colors hover:bg-accent/85 motion-reduce:transition-none ${focusRing}`}
             >
               Back to the hub
             </Link>
