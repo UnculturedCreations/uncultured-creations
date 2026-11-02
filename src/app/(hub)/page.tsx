@@ -11,7 +11,7 @@ export default function Home() {
   const projects = [
     {
       title: "Reality Reloaded",
-      description: "Enter the ultimate Big Brother fan zone.",
+      description: "Enter the ultimate reality TV fan zone.",
       href: "/fanzone",
       icon: <Play className="w-8 h-8" />,
       image: "/images/landing/fanzone.png",
