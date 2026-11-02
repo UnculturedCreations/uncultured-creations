@@ -49,13 +49,13 @@ const projects = [
 // The four unblurred ones are the crisp circles; the rest are soft glows.
 const orbs = [
   { className: "top-40 left-20 w-24 h-24 bg-accent blur-2xl opacity-60", animate: { x: [0, 40, 0], y: [0, -30, 0] }, duration: 6 },
-  { className: "top-0 left-1/4 w-40 h-40 bg-contrast opacity-20", animate: { x: [0, 200, 0], y: [0, 500, 0] }, duration: 25 },
-  { className: "top-0 left-80 w-40 h-40 bg-secondary opacity-20", animate: { x: [0, -230, 0], y: [0, 490, 0] }, duration: 35 },
+  { className: "top-0 left-1/4 w-40 h-40 bg-contrast blur opacity-20", animate: { x: [0, 200, 0], y: [0, 500, 0] }, duration: 25 },
+  { className: "top-0 left-80 w-40 h-40 bg-accent blur-sm opacity-20", animate: { x: [0, -230, 0], y: [0, 490, 0] }, duration: 35 },
   { className: "top-1/3 right-20 w-32 h-32 bg-contrast blur-2xl opacity-50", animate: { x: [0, 40, 0] }, duration: 8 },
   { className: "top-1/4 right-1/2 w-40 h-40 bg-accent blur-2xl opacity-15", animate: { x: [0, 60, 0], y: [0, -40, 0] }, duration: 7 },
   { className: "bottom-20 left-1/4 w-40 h-40 bg-contrast blur-2xl opacity-10", animate: { y: [0, 50, 0] }, duration: 10 },
-  { className: "top-0 right-80 w-40 h-40 bg-secondary opacity-20", animate: { x: [0, 200, 0], y: [0, 450, 0] }, duration: 40 },
-  { className: "top-0 right-1/4 w-40 h-40 bg-accent opacity-20", animate: { x: [0, -300, 0], y: [0, 470, 0] }, duration: 20 },
+  { className: "top-0 right-80 w-40 h-40 bg-secondary blur-sm opacity-20", animate: { x: [0, 200, 0], y: [0, 450, 0] }, duration: 40 },
+  { className: "top-0 right-1/4 w-40 h-40 bg-accent blur opacity-20", animate: { x: [0, -300, 0], y: [0, 470, 0] }, duration: 20 },
   { className: "bottom-0 right-1/4 w-32 h-32 bg-accent blur-2xl opacity-20", animate: { x: [0, -50, 0] }, duration: 7 },
 ]
 
