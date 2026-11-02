@@ -46,15 +46,16 @@ const projects = [
 ]
 
 // Decorative background orbs: position/size classes plus their drift animation.
+// The four unblurred ones are the crisp circles; the rest are soft glows.
 const orbs = [
   { className: "top-40 left-20 w-24 h-24 bg-accent blur-2xl opacity-60", animate: { x: [0, 40, 0], y: [0, -30, 0] }, duration: 6 },
-  { className: "top-24 left-1/4 w-40 h-40 bg-contrast blur-xl opacity-20", animate: { x: [0, 200, 0], y: [0, 500, 0] }, duration: 25 },
-  { className: "bottom-24 left-80 w-40 h-40 bg-secondary blur-xl opacity-20", animate: { x: [0, -230, 0], y: [0, 490, 0] }, duration: 35 },
+  { className: "top-0 left-1/4 w-40 h-40 bg-contrast opacity-20", animate: { x: [0, 200, 0], y: [0, 500, 0] }, duration: 25 },
+  { className: "top-0 left-80 w-40 h-40 bg-secondary opacity-20", animate: { x: [0, -230, 0], y: [0, 490, 0] }, duration: 35 },
   { className: "top-1/3 right-20 w-32 h-32 bg-contrast blur-2xl opacity-50", animate: { x: [0, 40, 0] }, duration: 8 },
   { className: "top-1/4 right-1/2 w-40 h-40 bg-accent blur-2xl opacity-15", animate: { x: [0, 60, 0], y: [0, -40, 0] }, duration: 7 },
   { className: "bottom-20 left-1/4 w-40 h-40 bg-contrast blur-2xl opacity-10", animate: { y: [0, 50, 0] }, duration: 10 },
-  { className: "bottom-24 right-80 w-40 h-40 bg-secondary blur-xl opacity-20", animate: { x: [0, 200, 0], y: [0, 450, 0] }, duration: 40 },
-  { className: "top-24 right-1/4 w-40 h-40 bg-accent blur-xl opacity-20", animate: { x: [0, -300, 0], y: [0, 470, 0] }, duration: 20 },
+  { className: "top-0 right-80 w-40 h-40 bg-secondary opacity-20", animate: { x: [0, 200, 0], y: [0, 450, 0] }, duration: 40 },
+  { className: "top-0 right-1/4 w-40 h-40 bg-accent opacity-20", animate: { x: [0, -300, 0], y: [0, 470, 0] }, duration: 20 },
   { className: "bottom-0 right-1/4 w-32 h-32 bg-accent blur-2xl opacity-20", animate: { x: [0, -50, 0] }, duration: 7 },
 ]
 
@@ -97,7 +98,13 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[url('/images/UC-BG-Overlay.png')] bg-cover bg-center px-4 text-contrast">
+    <main className="relative min-h-screen overflow-hidden bg-[url('/images/UC-BG-Overlay.png')] px-4 text-contrast">
+      {/* Corner clouds (decorative, static): above the edge fade, below the active card and text */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[7] overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-accent/30 blur-[110px] md:h-[36rem] md:w-[36rem]" />
+        <div className="absolute -bottom-48 -right-40 h-[30rem] w-[30rem] rounded-full bg-secondary/30 blur-[110px] md:h-[40rem] md:w-[40rem]" />
+      </div>
+
       {/* Floating orbs (decorative) */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5]">
         {orbs.map((orb, i) => (
@@ -161,14 +168,14 @@ export default function Home() {
         <section
           aria-roledescription="carousel"
           aria-label="Creative sections"
-          className="relative z-10 flex w-full flex-col items-center justify-center lg:w-[50vw]"
+          className="relative flex w-full flex-col items-center justify-center lg:w-[50vw]"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onFocus={() => setIsPlaying(false)}
         >
           <div
             aria-live={isPlaying ? "off" : "polite"}
-            className="relative flex h-[27rem] w-full items-center justify-center [perspective:2000px] md:h-[36rem]"
+            className="relative flex h-[27rem] w-full items-center justify-center md:h-[36rem]"
           >
             {projects.map((project, i) => {
               const isActive = i === index
@@ -181,7 +188,9 @@ export default function Home() {
                   aria-label={`${i + 1} of ${projects.length}: ${project.title}`}
                   aria-hidden={!isActive}
                   inert={!isActive}
-                  style={{ zIndex: isActive ? 10 : 0 }}
+                  // Per-card perspective keeps each card in the page's layer order: the active card sits above
+                  // the edge fade and clouds, the side cards below them (dimmed).
+                  style={{ zIndex: isActive ? 10 : 0, transformPerspective: 2000 }}
                   initial={false}
                   animate={{
                     opacity: isActive ? 1 : 0.25,
@@ -251,7 +260,7 @@ export default function Home() {
           </div>
 
           {/* Controls */}
-          <div className="mb-7 mt-2 flex items-center gap-1">
+          <div className="relative z-[8] mb-7 mt-2 flex items-center gap-1">
             <button
               type="button"
               onClick={() => goTo(index - 1)}
