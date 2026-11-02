@@ -3,24 +3,20 @@
 @tailwind utilities;
 
 html {
+  color-scheme: dark;
+  background: #121212;
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand dark base and off-white text (match tailwind.config.ts base/contrast). */
+  --background: #121212;
+  --foreground: #F0EBE1;
 
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-heading: var(--font-space-grotesk), sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
