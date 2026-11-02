@@ -28,7 +28,7 @@ export default function NotFound() {
 
           <Link
             href="/"
-            className={`mt-8 inline-block rounded-lg bg-accent px-5 py-3 font-medium text-contrast transition-colors hover:bg-accent/85 motion-reduce:transition-none ${focusRing}`}
+            className={`mt-8 inline-block rounded-lg bg-accent px-5 py-3 font-medium text-white transition-colors hover:bg-accent/85 motion-reduce:transition-none ${focusRing}`}
           >
             Go to the homepage
           </Link>

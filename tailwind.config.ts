@@ -32,6 +32,10 @@ const config: Config = {
           '0%, 100%': { transform: 'translate(0, 0) scale(1)', opacity: '0.3' },
           '50%': { transform: 'translate(-100px, 70px) scale(1.5)', opacity: '0.6' },
         },
+        gradientX: {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
         cardSwing: {
           '0%, 100%': { transform: 'translateX(0)'},
           '50%': {transform: 'translateX(-5PX)'},
@@ -50,6 +54,7 @@ const config: Config = {
         swing4: 'cardSwing 3.6s ease-in-out infinite',
         swing5: 'cardSwing 3.8s ease-in-out infinite',
         logoPulse: 'logoPulseScale 30s ease-in-out infinite',
+        'gradient-x': 'gradientX 6s ease-in-out infinite',
       },
     },
   },

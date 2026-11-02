@@ -12,7 +12,7 @@ export default function HubLayout({
     <div className="flex min-h-screen flex-col bg-base text-contrast">
       <a
         href="#content"
-        className="sr-only z-[60] rounded-md bg-accent px-4 py-2 font-medium text-contrast focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="sr-only z-[60] rounded-md bg-accent px-4 py-2 font-medium text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
         Skip to content
       </a>
