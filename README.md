@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Uncultured Creations
 
-## Getting Started
+A hub of bold storytelling, unapologetic fandom, and raw creativity.
 
-First, run the development server:
+Live site: https://uncultured-creations.vercel.app
+
+## Sections
+
+| Section | Route | Status |
+| --- | --- | --- |
+| Landing page | `/` | Live: animated hero and section carousel |
+| Reality Reloaded (fan zone) | `/fanzone` | Coming soon |
+| Stories | `/stories` | Coming soon |
+| Lyrics & Spoken Word | `/music` | Coming soon |
+| Portfolio | `/portfolio` | Coming soon (previous portfolio preserved, see below) |
+| The Lab | `/the-lab` | Coming soon |
+
+Planned: fanbase vote tracking and leaderboards, as part of Reality Reloaded.
+
+## Tech stack
+
+- [Next.js](https://nextjs.org) 15 (App Router) with React 19 and TypeScript
+- Tailwind CSS 3 for styling, Framer Motion for animation, lucide-react for icons
+- Fonts: Inter and Space Grotesk via `next/font`
+- Hosted on Vercel; deploys automatically from `main`
+
+## Getting started
+
+Requires Node.js 18.18 or later (20 LTS recommended).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Other scripts:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build    # production build (run before opening a pull request)
+npm run start    # serve the production build locally
+npm run lint     # ESLint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+src/app/
+├── (hub)/                 Pages that share the site header and footer
+│   ├── layout.tsx         Header, footer, dark background, skip link
+│   ├── page.tsx           Landing page
+│   ├── fanzone/ stories/ music/ portfolio/ the-lab/
+│   └── about/ contact/ news/    Not built yet; return 404
+├── components/common/     Header, Footer, ComingSoon
+├── data/
+│   ├── navigation.ts      The five sections: used by header, footer, 404 page and sitemap
+│   └── site.ts            Site URL, name, description and page-metadata helper
+├── layout.tsx             Root layout: fonts and site-wide metadata
+├── not-found.tsx          Branded 404 page
+├── robots.ts, sitemap.ts  Search-engine files
+├── favicon.ico, icon.png, apple-icon.png, opengraph-image.jpg, twitter-image.jpg
+└── thank-you/             Confirmation page for the preserved portfolio contact form
+public/images/             Images used by the site
+design/brand-assets/       Logo candidates and source artwork (not served)
+```
 
-To learn more about Next.js, take a look at the following resources:
+Route groups such as `(hub)` organise files without changing URLs.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Common changes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Launch a section.** Replace the `<ComingSoon />` component in the section's `page.tsx` with real content. Keep the `pageMetadata(...)` export so the page keeps its title, description and link preview.
 
-## Deploy on Vercel
+**Add a section to the navigation.** Add it to `src/app/data/navigation.ts`. The header, footer, 404 page and sitemap update automatically.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Restore the previous portfolio.** It is preserved, unserved, in `src/app/(hub)/portfolio/PortfolioHome.tsx`; the note at the top of that file explains how to restore it.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Replace the logo.** Update `public/images/landing/logo-temp.png`, then regenerate the favicon, app icons and link-preview image in `src/app/`.
+
+## Configuration
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | No | Public site address for canonical links, the sitemap and link previews. Defaults to `https://uncultured-creations.vercel.app`; set it in Vercel when a custom domain is connected. |
+
+There are no secrets or other environment variables.
+
+## Accessibility and motion
+
+Decorative animation is disabled when the visitor's device requests reduced motion, and the landing carousel never auto-rotates in that case. Keep this behaviour for new animations: use Framer Motion's `useReducedMotion()` or Tailwind's `motion-reduce:` variants.
+
+## Brand
+
+Colours are defined in `tailwind.config.ts`: `accent` (#0066FF), `secondary` (#A855F7), `base` (#121212) and `contrast` (#F0EBE1). Headings use Space Grotesk (`font-heading`); body text uses Inter.
