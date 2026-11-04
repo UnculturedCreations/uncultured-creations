@@ -7,6 +7,8 @@ import {
   getCurrentSeason,
   getHousemates,
   getLatestWinner,
+  getPolls,
+  getQuizzes,
   getRankings,
   getShowBySlug,
   getShowPosts,
@@ -15,6 +17,8 @@ import {
 } from "@/lib/realityReloaded"
 import Countdown from "@/app/components/fanzone/Countdown"
 import HousemateGrid from "@/app/components/fanzone/HousemateGrid"
+import PollCard from "@/app/components/fanzone/PollCard"
+import QuizCard from "@/app/components/fanzone/QuizCard"
 import RankingsBoard from "@/app/components/fanzone/RankingsBoard"
 import StoryCard from "@/app/components/fanzone/StoryCard"
 import YardCta from "@/app/components/fanzone/YardCta"
@@ -57,11 +61,13 @@ export default async function ShowPage({ params }: Params) {
   }
   if (!show || show.status === "coming_soon") notFound()
 
-  const [season, posts, events, winner] = await Promise.all([
+  const [season, posts, events, winner, polls, quizzes] = await Promise.all([
     getCurrentSeason(show.id),
     getShowPosts(show.id),
     getUpcomingEvents(show.id),
     getLatestWinner(show.id),
+    getPolls(show.id),
+    getQuizzes(show.id),
   ])
   const [housemates, rankings] = season
     ? await Promise.all([getHousemates(season.id), getRankings(season.id)])
@@ -131,10 +137,32 @@ export default async function ShowPage({ params }: Params) {
           )}
         </section>
 
+        {polls.length > 0 && (
+          <section aria-labelledby="polls">
+            <SectionHeading id="polls" title="Fan polls" intro="One vote per device. Results are fan opinion, just for fun." />
+            <div className="grid gap-5 md:grid-cols-2">
+              {polls.map((poll) => (
+                <PollCard key={poll.id} poll={poll} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {rankings.length > 0 && (
           <section aria-labelledby="rankings">
             <SectionHeading id="rankings" title="Housemate rankings" intro="Running totals for the season so far." />
             <RankingsBoard categories={rankings} />
+          </section>
+        )}
+
+        {quizzes.length > 0 && (
+          <section aria-labelledby="quizzes">
+            <SectionHeading id="quizzes" title="Quizzes" intro={`How well do you know ${label}?`} />
+            <div className="grid gap-5 md:grid-cols-2">
+              {quizzes.map((quiz) => (
+                <QuizCard key={quiz.id} quiz={quiz} />
+              ))}
+            </div>
           </section>
         )}
 
