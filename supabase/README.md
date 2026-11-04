@@ -10,9 +10,28 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0001_reality_reloaded_foundations.sql` | Creates the tables, security rules and editor roles | Once, first |
 | `seed/0001_shows_and_sample_data.sql` | Adds the three shows plus fictional sample content | Once, after the migration |
 | `seed/0002_remove_sample_data.sql` | Deletes all sample content (the shows stay) | Before real content goes in |
+| `migrations/0002_poll_voting.sql` | Adds `record_vote()`, callable only with the secret key | Once, after 0001 |
+| `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
 
 To run a file: Supabase dashboard -> **SQL Editor** -> **New query** -> paste the
 file's contents -> **Run**. Migrations are numbered; run them in order, once each.
+
+## Poll voting
+
+Votes go: browser -> `cast-vote` Edge Function -> Cloudflare Turnstile check ->
+`record_vote()` -> `poll_votes`. The browser cannot call `record_vote()` itself.
+
+Deploying the function (dashboard):
+1. **Edge Functions** -> **Deploy a new function** -> **Via Editor**, name it `cast-vote`.
+2. Paste `functions/cast-vote/index.ts` and deploy.
+3. In the function's settings, turn **off** "Verify JWT" (visitors are anonymous;
+   Turnstile protects the function).
+4. **Edge Functions** -> **Secrets**: add `TURNSTILE_SECRET_KEY` (from Cloudflare) and
+   `TURNSTILE_ALLOWED_HOSTNAMES`, e.g.
+   `uncultured-creations.vercel.app,uncultured-creations-*.vercel.app`
+   (add a custom domain here when one is connected).
+
+Never set `TURNSTILE_VERIFY_URL`; it exists only for local testing.
 
 ## Security model
 

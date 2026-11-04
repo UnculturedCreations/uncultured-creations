@@ -209,3 +209,114 @@ export async function getRankings(seasonId: string, top = 5): Promise<RankingCat
       .slice(0, top),
   }))
 }
+
+// ---------------------------------------------------------------------
+// Polls and quizzes
+// ---------------------------------------------------------------------
+
+export interface PollOption {
+  id: string
+  label: string
+  housemate: { name: string; color: string | null } | null
+}
+
+export interface Poll {
+  id: string
+  question: string
+  status: "open" | "closed"
+  show_results: "after_vote" | "always" | "after_close"
+  closes_at: string | null
+  options: PollOption[]
+  // Vote totals by option id, included when visitors may already see them.
+  results: Record<string, number> | null
+}
+
+export interface QuizOption {
+  id: string
+  label: string
+  is_correct: boolean
+}
+
+export interface QuizQuestion {
+  id: string
+  prompt: string
+  explanation: string | null
+  options: QuizOption[]
+}
+
+export interface Quiz {
+  id: string
+  title: string
+  description: string | null
+  questions: QuizQuestion[]
+}
+
+const bySortOrder = <T extends { sort_order: number }>(a: T, b: T) => a.sort_order - b.sort_order
+
+export async function getPollResults(pollId: string): Promise<Record<string, number> | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc("poll_results", { p_poll_id: pollId })
+  report("getPollResults", error)
+  if (error || !data) return null
+  return Object.fromEntries((data as { option_id: string; votes: number }[]).map((r) => [r.option_id, Number(r.votes)]))
+}
+
+// Open polls first, then the most recent closed ones.
+export async function getPolls(showId: string, limit = 6): Promise<Poll[]> {
+  if (!supabase) return []
+  let query = supabase
+    .from("polls")
+    .select("id, question, status, show_results, closes_at, created_at, poll_options(id, label, sort_order, housemate:housemates(name, color))")
+    .eq("show_id", showId)
+    .in("status", ["open", "closed"])
+    .order("status", { ascending: false }) // "open" sorts after "closed" alphabetically; descending puts open first
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query
+  report("getPolls", error)
+  type Row = Omit<Poll, "options" | "results"> & { poll_options: (PollOption & { sort_order: number })[] }
+  const rows = (data ?? []) as unknown as Row[]
+  return Promise.all(
+    rows.map(async ({ poll_options, ...poll }) => {
+      const visible = poll.status === "closed" || poll.show_results === "always"
+      return {
+        id: poll.id,
+        question: poll.question,
+        status: poll.status,
+        show_results: poll.show_results,
+        closes_at: poll.closes_at,
+        options: [...poll_options].sort(bySortOrder).map(({ id, label, housemate }) => ({ id, label, housemate })),
+        results: visible ? await getPollResults(poll.id) : null,
+      }
+    }),
+  )
+}
+
+export async function getQuizzes(showId: string, limit = 3): Promise<Quiz[]> {
+  if (!supabase) return []
+  let query = supabase
+    .from("quizzes")
+    .select("id, title, description, published_at, quiz_questions(id, prompt, explanation, sort_order, quiz_options(id, label, is_correct, sort_order))")
+    .eq("show_id", showId)
+    .order("published_at", { ascending: false })
+    .limit(limit)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query
+  report("getQuizzes", error)
+  type QRow = Omit<QuizQuestion, "options"> & { sort_order: number; quiz_options: (QuizOption & { sort_order: number })[] }
+  type Row = Omit<Quiz, "questions"> & { quiz_questions: QRow[] }
+  return ((data ?? []) as unknown as Row[])
+    .map(({ quiz_questions, ...quiz }) => ({
+      id: quiz.id,
+      title: quiz.title,
+      description: quiz.description,
+      questions: [...quiz_questions].sort(bySortOrder).map(({ quiz_options, ...q }) => ({
+        id: q.id,
+        prompt: q.prompt,
+        explanation: q.explanation,
+        options: [...quiz_options].sort(bySortOrder).map(({ id, label, is_correct }) => ({ id, label, is_correct })),
+      })),
+    }))
+    .filter((quiz) => quiz.questions.length > 0)
+}
