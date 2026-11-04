@@ -9,7 +9,7 @@ Live site: https://uncultured-creations.vercel.app
 | Section | Route | Status |
 | --- | --- | --- |
 | Landing page | `/` | Live: animated hero and section carousel |
-| Reality Reloaded (fan zone) | `/fanzone` | Coming soon |
+| Reality Reloaded (fan zone) | `/fanzone`, `/fanzone/[show]` | Live: top stories, show pages, rankings (data from Supabase) |
 | Stories | `/stories` | Coming soon |
 | Lyrics & Spoken Word | `/music` | Coming soon |
 | Portfolio | `/portfolio` | Coming soon (previous portfolio preserved, see below) |
@@ -82,6 +82,7 @@ Route groups such as `(hub)` organise files without changing URLs.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes, for Reality Reloaded | The Supabase project address. Public. |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes, for Reality Reloaded | Supabase's publishable key. Public by design; access is enforced by database security rules. |
+| `NEXT_PUBLIC_SHOW_SAMPLE_DATA` | No | `true` shows fictional sample content (rows with `is_sample`). Set it for local development and Vercel Preview only; leave it unset in Production. |
 | `NEXT_PUBLIC_SITE_URL` | No | Public site address for canonical links, the sitemap and link previews. Defaults to `https://uncultured-creations.vercel.app`; set it in Vercel when a custom domain is connected. |
 
 Copy `.env.example` to `.env.local` for local development. There are no secrets: never add Supabase's secret (`service_role`) key to this project. See `supabase/README.md` for the database.
