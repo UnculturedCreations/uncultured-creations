@@ -46,7 +46,8 @@ Never set `TURNSTILE_VERIFY_URL`; it exists only for local testing.
 ## The editor area (/editor)
 
 Editors sign in at `/editor` with an email and password to post stories, run polls
-and quizzes, and update show status and the schedule. There is no public sign-up.
+and quizzes, manage seasons, housemates and weekly rankings, and update show status
+and the schedule. There is no public sign-up.
 
 **Create an editor account:**
 1. Dashboard -> **Authentication** -> **Users** -> **Add user** -> **Create new user**.
