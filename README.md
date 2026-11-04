@@ -23,6 +23,7 @@ Planned: fanbase vote tracking and leaderboards, as part of Reality Reloaded.
 - Tailwind CSS 3 for styling, Framer Motion for animation, lucide-react for icons
 - Fonts: Inter and Space Grotesk via `next/font`
 - Hosted on Vercel; deploys automatically from `main`
+- Reality Reloaded content stored in Supabase (Postgres)
 
 ## Getting started
 
@@ -79,9 +80,11 @@ Route groups such as `(hub)` organise files without changing URLs.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes, for Reality Reloaded | The Supabase project address. Public. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes, for Reality Reloaded | Supabase's publishable key. Public by design; access is enforced by database security rules. |
 | `NEXT_PUBLIC_SITE_URL` | No | Public site address for canonical links, the sitemap and link previews. Defaults to `https://uncultured-creations.vercel.app`; set it in Vercel when a custom domain is connected. |
 
-There are no secrets or other environment variables.
+Copy `.env.example` to `.env.local` for local development. There are no secrets: never add Supabase's secret (`service_role`) key to this project. See `supabase/README.md` for the database.
 
 ## Accessibility and motion
 
