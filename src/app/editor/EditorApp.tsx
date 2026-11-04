@@ -9,11 +9,13 @@ import PostsPanel from "./PostsPanel"
 import PollsPanel from "./PollsPanel"
 import QuizzesPanel from "./QuizzesPanel"
 import ShowsPanel from "./ShowsPanel"
+import SeasonsPanel from "./SeasonsPanel"
 
 const TABS = [
   { id: "posts", label: "Posts" },
   { id: "polls", label: "Polls" },
   { id: "quizzes", label: "Quizzes" },
+  { id: "seasons", label: "Seasons and rankings" },
   { id: "shows", label: "Shows and schedule" },
 ] as const
 type Tab = (typeof TABS)[number]["id"]
@@ -137,6 +139,7 @@ export default function EditorApp() {
           {tab === "posts" && <PostsPanel db={db} userId={session.user.id} />}
           {tab === "polls" && <PollsPanel db={db} userId={session.user.id} />}
           {tab === "quizzes" && <QuizzesPanel db={db} userId={session.user.id} />}
+          {tab === "seasons" && <SeasonsPanel db={db} />}
           {tab === "shows" && <ShowsPanel db={db} />}
         </>
       )}
