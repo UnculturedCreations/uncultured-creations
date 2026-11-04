@@ -43,10 +43,23 @@ Never set `TURNSTILE_VERIFY_URL`; it exists only for local testing.
   a protected, bot-checked function in a later step.
 - Users can change their display name but never their role.
 
-## Making someone an editor
+## The editor area (/editor)
 
-1. They sign in once (sign-in arrives with the editor area).
-2. Dashboard -> **Table Editor** -> `profiles` -> set their `role` to `editor`.
+Editors sign in at `/editor` with an email and password to post stories, run polls
+and quizzes, and update show status and the schedule. There is no public sign-up.
+
+**Create an editor account:**
+1. Dashboard -> **Authentication** -> **Users** -> **Add user** -> **Create new user**.
+   Enter their email and a password, and tick **Auto Confirm User**.
+2. **Table Editor** -> `profiles` -> find the new row -> set `role` to `editor`
+   (or `admin`). Without this they can sign in but see "No editor access yet".
+3. Share the password with them privately. To reset it later, edit the user in
+   **Authentication** -> **Users** (password-reset emails need custom SMTP).
+
+**Recommended:** **Authentication** -> **Sign In / Providers** -> turn off
+**Allow new users to sign up**, so only accounts you create can exist.
+
+To remove someone's access, set their `role` back to `fan` or delete the user.
 
 ## Keys
 

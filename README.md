@@ -15,6 +15,8 @@ Live site: https://uncultured-creations.vercel.app
 | Portfolio | `/portfolio` | Coming soon (previous portfolio preserved, see below) |
 | The Lab | `/the-lab` | Coming soon |
 
+Editors manage Reality Reloaded content at `/editor` (see `supabase/README.md` for creating accounts).
+
 Planned: fanbase vote tracking and leaderboards, as part of Reality Reloaded.
 
 ## Tech stack
