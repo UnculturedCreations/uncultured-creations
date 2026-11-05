@@ -46,57 +46,18 @@ export function ShowTag({ name, accent }: { name: string; accent: string | null 
   )
 }
 
-function initials(name: string) {
-  const words = name.trim().split(/\s+/)
-  const first = words[0]?.[0] ?? ""
-  const last = words.length > 1 ? words[words.length - 1][0] : ""
-  return (first + last).toUpperCase()
-}
+export { default as HousemateAvatar } from "./HousemateAvatar"
 
-// Choose dark or light text for legibility on a given background colour.
-function textOn(hex: string) {
-  const n = parseInt(hex.slice(1), 16)
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => {
-    const s = c / 255
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
-  })
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  return luminance > 0.35 ? "#121212" : "#FFFFFF"
-}
-
-// Housemates are shown as coloured initials, never photos (photos belong to the shows).
-export function HousemateAvatar({
-  name,
-  color,
-  size = "md",
-  dimmed = false,
-}: {
-  name: string
-  color: string | null
-  size?: "sm" | "md"
-  dimmed?: boolean
-}) {
-  const bg = color ?? "#3D85FF"
-  const dims = size === "sm" ? "h-8 w-8 text-xs" : "h-12 w-12 text-sm"
-  return (
-    <span
-      aria-hidden="true"
-      className={`inline-grid shrink-0 place-items-center rounded-full font-heading font-bold ${dims} ${dimmed ? "opacity-50 grayscale" : ""}`}
-      style={{ backgroundColor: bg, color: textOn(bg) }}
-    >
-      {initials(name)}
-    </span>
-  )
-}
-
-export function housemateStatusLabel(status: HousemateStatus, exitWeek: number | null) {
+// Status in the show's own words: "In the house" / "In the villa", "Evicted" / "Dumped".
+export function housemateStatusLabel(status: HousemateStatus, exitWeek: number | null, venue: "house" | "villa" = "house") {
+  const out = venue === "villa" ? "Dumped" : "Evicted"
   switch (status) {
     case "in_house":
-      return "In the house"
+      return `In the ${venue}`
     case "evicted":
-      return exitWeek ? `Evicted in week ${exitWeek}` : "Evicted"
+      return exitWeek ? `${out} in week ${exitWeek}` : out
     case "walked":
-      return "Left the house"
+      return `Left the ${venue}`
     case "disqualified":
       return "Disqualified"
     case "winner":

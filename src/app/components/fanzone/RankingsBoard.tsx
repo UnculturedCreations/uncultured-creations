@@ -23,7 +23,7 @@ export default function RankingsBoard({ categories }: { categories: RankingCateg
                 {category.entries.map((entry, i) => (
                   <li key={entry.housemate.id} className="flex items-center gap-3">
                     <span className="w-4 text-right text-sm tabular-nums text-contrast/60">{i + 1}</span>
-                    <HousemateAvatar name={entry.housemate.name} color={entry.housemate.color} size="sm" />
+                    <HousemateAvatar name={entry.housemate.name} color={entry.housemate.color} imageUrl={entry.housemate.image_url} size="sm" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="truncate text-sm text-contrast">{entry.housemate.name}</span>

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { Button, Card, Field, Select, TextInput, useNotice, useShows } from "./fields"
+import { Button, Card, Field, Select, TextInput, toSquareJpeg, useNotice, useShows } from "./fields"
+import { HousemateAvatar } from "@/app/components/fanzone/ui"
 
 interface SeasonRow {
   id: string
@@ -17,6 +18,7 @@ interface HousemateRow {
   id: string
   name: string
   color: string | null
+  image_url: string | null
   status: string
   exit_week: number | null
   sort_order: number
@@ -211,6 +213,43 @@ function HousemateRowEditor({ db, h, onChanged }: { db: SupabaseClient; h: House
     ok("Saved.")
     onChanged()
   }
+  const [uploading, setUploading] = useState(false)
+  const BUCKET = "housemates"
+  const pathOf = (url: string | null) => (url ? url.split(`/object/public/${BUCKET}/`)[1] : undefined)
+
+  async function uploadImage(file: File | undefined) {
+    if (!file) return
+    if (!file.type.startsWith("image/")) return fail("Choose an image file.")
+    if (file.size > 15 * 1024 * 1024) return fail("That image is over 15 MB. Choose a smaller one.")
+    setUploading(true)
+    try {
+      const blob = await toSquareJpeg(file)
+      const path = `${h.id}/${Date.now()}.jpg`
+      const { error: upError } = await db.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg" })
+      if (upError) throw upError
+      const url = db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
+      const { error } = await db.from("housemates").update({ image_url: url }).eq("id", h.id)
+      if (error) throw error
+      const old = pathOf(h.image_url)
+      if (old) await db.storage.from(BUCKET).remove([old]) // tidy up the replaced image
+      ok("Image saved.")
+      onChanged()
+    } catch (e) {
+      fail("Couldn't upload the image.", e as { message?: string })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function removeImage() {
+    const { error } = await db.from("housemates").update({ image_url: null }).eq("id", h.id)
+    if (error) return fail("Couldn't remove the image.", error)
+    const old = pathOf(h.image_url)
+    if (old) await db.storage.from(BUCKET).remove([old])
+    ok("Image removed. Initials are shown instead.")
+    onChanged()
+  }
+
   async function remove() {
     if (!window.confirm(`Remove ${h.name}? Their rankings are removed too.`)) return
     const { error } = await db.from("housemates").delete().eq("id", h.id)
@@ -245,6 +284,28 @@ function HousemateRowEditor({ db, h, onChanged }: { db: SupabaseClient; h: House
           Remove
         </Button>
       </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <HousemateAvatar name={h.name} color={color} imageUrl={h.image_url} />
+        <label className={`cursor-pointer rounded-lg border border-contrast/20 px-4 py-2 text-sm font-medium text-contrast hover:border-contrast/40 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${uploading ? "opacity-50" : ""}`}>
+          {uploading ? "Uploading..." : h.image_url ? "Replace image" : "Upload image"}
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            disabled={uploading}
+            aria-label={`${h.image_url ? "Replace" : "Upload"} image for ${h.name}`}
+            onChange={(e) => {
+              uploadImage(e.target.files?.[0])
+              e.target.value = ""
+            }}
+          />
+        </label>
+        {h.image_url && (
+          <Button variant="secondary" onClick={removeImage} aria-label={`Remove image for ${h.name}`}>
+            Remove image
+          </Button>
+        )}
+      </div>
       {node}
     </li>
   )
@@ -270,11 +331,11 @@ function HousematesCard({ db, seasonId, housemates, reload }: { db: SupabaseClie
   return (
     <Card>
       <h2 className="font-heading text-xl font-bold text-contrast">Housemates</h2>
-      <p className="mt-1 text-sm text-contrast/70">Update status and exit week after each eviction. Housemates appear as coloured initials, never photos.</p>
+      <p className="mt-1 text-sm text-contrast/70">Update status and exit week after each eviction. Images are optional and resized automatically; without one, coloured initials are shown. Only upload images you have the right to use.</p>
       {housemates.length > 0 && (
         <ul className="mt-2 divide-y divide-contrast/10">
           {housemates.map((h) => (
-            <HousemateRowEditor key={`${h.id}-${h.name}-${h.status}-${h.exit_week}-${h.color}`} db={db} h={h} onChanged={reload} />
+            <HousemateRowEditor key={`${h.id}-${h.name}-${h.status}-${h.exit_week}-${h.color}-${h.image_url}`} db={db} h={h} onChanged={reload} />
           ))}
         </ul>
       )}
@@ -488,7 +549,7 @@ export default function SeasonsPanel({ db }: { db: SupabaseClient }) {
 
   const loadHousemates = useCallback(async () => {
     if (!seasonId) return setHousemates([])
-    const { data } = await db.from("housemates").select("id, name, color, status, exit_week, sort_order").eq("season_id", seasonId).order("sort_order")
+    const { data } = await db.from("housemates").select("id, name, color, image_url, status, exit_week, sort_order").eq("season_id", seasonId).order("sort_order")
     setHousemates((data ?? []) as HousemateRow[])
   }, [db, seasonId])
 

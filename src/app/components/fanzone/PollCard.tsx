@@ -154,11 +154,19 @@ export default function PollCard({ poll }: { poll: Poll }) {
   }
 
   const total = results ? Object.values(results).reduce((a, b) => a + b, 0) : 0
+  // Shown in the visitor's own time zone once the page is running in their browser.
+  const [revealWhen, setRevealWhen] = useState<string | null>(null)
+  useEffect(() => {
+    if (poll.closes_at)
+      setRevealWhen(new Date(poll.closes_at).toLocaleString(undefined, { weekday: "long", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))
+  }, [poll.closes_at])
 
   return (
     <article className="rounded-2xl border border-contrast/10 bg-contrast/[0.03] p-5">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-contrast/65">{closed ? "Final results" : "Fan poll"}</span>
+        <span className="text-xs text-contrast/65">
+          {closed ? "Final results" : revealWhen && poll.show_results === "after_close" ? `Results ${revealWhen}` : "Fan poll"}
+        </span>
         {showResults && <span className="text-xs text-contrast/65">{total} {total === 1 ? "vote" : "votes"}</span>}
       </div>
       <h3 id={`${groupId}-q`} className="mt-2 font-heading text-lg font-bold leading-snug text-contrast">
@@ -174,7 +182,7 @@ export default function PollCard({ poll }: { poll: Poll }) {
             return (
               <li key={option.id}>
                 <div className="flex items-center gap-3">
-                  {option.housemate && <HousemateAvatar name={option.housemate.name} color={option.housemate.color} size="sm" />}
+                  {option.housemate && <HousemateAvatar name={option.housemate.name} color={option.housemate.color} imageUrl={option.housemate.image_url} size="sm" />}
                   <span className="min-w-0 flex-1 truncate text-sm text-contrast">
                     {option.label}
                     {mine && <span className="ml-2 text-xs text-contrast/65">(your vote)</span>}
@@ -191,13 +199,14 @@ export default function PollCard({ poll }: { poll: Poll }) {
       ) : votedFor ? (
         <p className="mt-4 text-sm text-contrast/80">
           {poll.show_results === "after_close"
-            ? "Your vote is in. Results are revealed when the poll closes."
+            ? `Your vote is in. Results are revealed ${revealWhen ? `on ${revealWhen}` : "when the poll closes"}.`
             : "Your vote is in."}
         </p>
       ) : (
         <fieldset className="mt-4" disabled={!canVote || phase === "submitting"}>
           <legend className="sr-only">{poll.question}</legend>
-          <div className="space-y-2">
+          {/* Polls with many options (e.g. a big eviction week): two columns on wider screens. */}
+          <div className={poll.options.length > 8 ? "grid gap-2 sm:grid-cols-2" : "space-y-2"}>
             {poll.options.map((option) => (
               <label
                 key={option.id}
@@ -213,7 +222,7 @@ export default function PollCard({ poll }: { poll: Poll }) {
                   onChange={() => setSelected(option.id)}
                   className="sr-only"
                 />
-                {option.housemate && <HousemateAvatar name={option.housemate.name} color={option.housemate.color} size="sm" />}
+                {option.housemate && <HousemateAvatar name={option.housemate.name} color={option.housemate.color} imageUrl={option.housemate.image_url} size="sm" />}
                 <span className="text-sm text-contrast">{option.label}</span>
               </label>
             ))}

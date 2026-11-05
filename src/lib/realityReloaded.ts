@@ -21,6 +21,9 @@ export interface Show {
   status: ShowStatus
   tagline: string | null
   accent_color: string | null
+  cast_singular: string
+  cast_plural: string
+  venue: "house" | "villa"
 }
 
 export interface ShowRef {
@@ -61,6 +64,7 @@ export interface Housemate {
   id: string
   name: string
   color: string | null
+  image_url: string | null
   status: HousemateStatus
   exit_week: number | null
 }
@@ -78,7 +82,7 @@ export interface RankingCategory {
   entries: RankingEntry[]
 }
 
-const SHOW_FIELDS = "id, slug, name, short_name, country, status, tagline, accent_color"
+const SHOW_FIELDS = "id, slug, name, short_name, country, status, tagline, accent_color, cast_singular, cast_plural, venue"
 const SHOW_REF = "show:shows(slug, name, short_name, accent_color)"
 const POST_FIELDS = `id, kind, title, summary, source_name, source_url, published_at, ${SHOW_REF}`
 
@@ -184,7 +188,7 @@ export async function getHousemates(seasonId: string): Promise<Housemate[]> {
   if (!supabase) return []
   const { data, error } = await supabase
     .from("housemates")
-    .select("id, name, color, status, exit_week")
+    .select("id, name, color, image_url, status, exit_week")
     .eq("season_id", seasonId)
     .order("sort_order")
   report("getHousemates", error)
@@ -196,7 +200,7 @@ export async function getRankings(seasonId: string, top = 5): Promise<RankingCat
   const { data, error } = await supabase
     .from("ranking_categories")
     .select(
-      "id, name, description, higher_is_better, sort_order, housemate_stats(value, housemate:housemates(id, name, color, status, exit_week))",
+      "id, name, description, higher_is_better, sort_order, housemate_stats(value, housemate:housemates(id, name, color, image_url, status, exit_week))",
     )
     .eq("season_id", seasonId)
     .order("sort_order")
@@ -217,7 +221,7 @@ export async function getRankings(seasonId: string, top = 5): Promise<RankingCat
 export interface PollOption {
   id: string
   label: string
-  housemate: { name: string; color: string | null } | null
+  housemate: { name: string; color: string | null; image_url: string | null } | null
 }
 
 export interface Poll {
@@ -266,7 +270,7 @@ export async function getPolls(showId: string, limit = 6): Promise<Poll[]> {
   if (!supabase) return []
   let query = supabase
     .from("polls")
-    .select("id, question, status, show_results, closes_at, created_at, poll_options(id, label, sort_order, housemate:housemates(name, color))")
+    .select("id, question, status, show_results, closes_at, created_at, poll_options(id, label, sort_order, housemate:housemates(name, color, image_url))")
     .eq("show_id", showId)
     .in("status", ["open", "closed"])
     .order("status", { ascending: false }) // "open" sorts after "closed" alphabetically; descending puts open first
@@ -279,11 +283,14 @@ export async function getPolls(showId: string, limit = 6): Promise<Poll[]> {
   const rows = (data ?? []) as unknown as Row[]
   return Promise.all(
     rows.map(async ({ poll_options, ...poll }) => {
-      const visible = poll.status === "closed" || poll.show_results === "always"
+      // A poll whose closing time has passed counts as closed, even if nobody closed it by hand.
+      const closedByTime = poll.closes_at !== null && new Date(poll.closes_at).getTime() <= Date.now()
+      const status = closedByTime ? "closed" : poll.status
+      const visible = status === "closed" || poll.show_results === "always"
       return {
         id: poll.id,
         question: poll.question,
-        status: poll.status,
+        status,
         show_results: poll.show_results,
         closes_at: poll.closes_at,
         options: [...poll_options].sort(bySortOrder).map(({ id, label, housemate }) => ({ id, label, housemate })),

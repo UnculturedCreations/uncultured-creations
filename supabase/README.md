@@ -11,6 +11,8 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `seed/0001_shows_and_sample_data.sql` | Adds the three shows plus fictional sample content | Once, after the migration |
 | `seed/0002_remove_sample_data.sql` | Deletes all sample content (the shows stay) | Before real content goes in |
 | `migrations/0002_poll_voting.sql` | Adds `record_vote()`, callable only with the secret key | Once, after 0001 |
+| `migrations/0003_show_wording_poll_closing_images.sql` | Per-show wording (housemates/islanders, house/villa), automatic poll closing, image field, adds Love Island Nigeria | Once, after 0002 |
+| `migrations/0004_housemate_image_storage.sql` | Creates the public `housemates` image bucket; only editors can upload | Once, after 0003 |
 | `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
 
 To run a file: Supabase dashboard -> **SQL Editor** -> **New query** -> paste the
@@ -32,6 +34,14 @@ Deploying the function (dashboard):
    (add a custom domain here when one is connected).
 
 Never set `TURNSTILE_VERIFY_URL`; it exists only for local testing.
+
+## Housemate images
+
+Editors upload images per housemate in **Seasons and rankings**. Images are cropped
+to a 320 x 320 square and compressed in the browser before upload, so each is
+roughly 20-40 KB. Without an image (or if one fails to load), coloured initials are
+shown. Only upload images you have the right to use; stylised illustrations are
+safer than photos or photorealistic AI images of real people.
 
 ## Security model
 
