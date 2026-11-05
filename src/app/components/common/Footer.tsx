@@ -38,9 +38,12 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-contrast/10">
-        <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-contrast/60 sm:px-6">
-          © {new Date().getFullYear()} Uncultured Creations
-        </p>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 text-xs text-contrast/60 sm:px-6">
+          <p>© {new Date().getFullYear()} Uncultured Creations</p>
+          <Link href="/editor" className={`rounded-sm hover:text-contrast ${focusRing}`}>
+            Editors
+          </Link>
+        </div>
       </div>
     </footer>
   )

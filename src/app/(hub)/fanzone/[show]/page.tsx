@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!show || show.status === "coming_soon") return { title: "Page not found | Uncultured Creations" }
   return pageMetadata(
     show.name,
-    show.tagline ?? `${show.name} news, gossip, polls and housemate rankings on Reality Reloaded.`,
+    show.tagline ?? `${show.name} news, gossip, polls and ${show.cast_singular.toLowerCase()} rankings on Reality Reloaded.`,
     `/fanzone/${show.slug}`,
   )
 }
@@ -113,7 +113,7 @@ export default async function ShowPage({ params }: Params) {
               Between seasons
             </h2>
             <p className="mt-3 max-w-prose text-contrast/80">
-              The house is quiet for now. Housemate rankings, polls and predictions return when the next season starts.
+              The {show.venue} is quiet for now. {show.cast_singular} rankings, polls and predictions return when the next season starts.
             </p>
             {winner?.winner_name && (
               <p className="mt-5 text-contrast/80">
@@ -142,7 +142,9 @@ export default async function ShowPage({ params }: Params) {
             <SectionHeading id="polls" title="Fan polls" intro="One vote per device. Results are fan opinion, just for fun." />
             <div className="grid gap-5 md:grid-cols-2">
               {polls.map((poll) => (
-                <PollCard key={poll.id} poll={poll} />
+                <div key={poll.id} className={poll.options.length > 8 ? "md:col-span-2" : undefined}>
+                  <PollCard poll={poll} />
+                </div>
               ))}
             </div>
           </section>
@@ -150,7 +152,7 @@ export default async function ShowPage({ params }: Params) {
 
         {rankings.length > 0 && (
           <section aria-labelledby="rankings">
-            <SectionHeading id="rankings" title="Housemate rankings" intro="Running totals for the season so far." />
+            <SectionHeading id="rankings" title={`${show.cast_singular} rankings`} intro="Running totals for the season so far." />
             <RankingsBoard categories={rankings} />
           </section>
         )}
@@ -168,8 +170,8 @@ export default async function ShowPage({ params }: Params) {
 
         {housemates.length > 0 && (
           <section aria-labelledby="housemates">
-            <SectionHeading id="housemates" title="Housemates" />
-            <HousemateGrid housemates={housemates} />
+            <SectionHeading id="housemates" title={show.cast_plural} />
+            <HousemateGrid housemates={housemates} venue={show.venue} />
           </section>
         )}
 

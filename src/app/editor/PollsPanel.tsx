@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { Button, Card, Field, Select, TextInput, currentSeason, useNotice, useShows, type EditorHousemate } from "./fields"
+import { Button, Card, Field, Select, TextInput, currentSeason, formatDate, useNotice, useShows, type EditorHousemate } from "./fields"
 
 interface PollRow {
   id: string
@@ -10,6 +10,7 @@ interface PollRow {
   question: string
   status: "draft" | "open" | "closed"
   show_results: string
+  closes_at: string | null
   is_sample: boolean
   poll_options: { id: string }[]
 }
@@ -21,6 +22,8 @@ const RESULTS = [
 ]
 
 type Option = { label: string; housemate_id: string }
+// Enough for any week, however many housemates are up for eviction.
+const MAX_OPTIONS = 50
 const blankOptions = (): Option[] => [
   { label: "", housemate_id: "" },
   { label: "", housemate_id: "" },
@@ -36,7 +39,10 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
   const [options, setOptions] = useState<Option[]>(blankOptions)
   const [season, setSeason] = useState<{ id: string; name: string } | null>(null)
   const [housemates, setHousemates] = useState<EditorHousemate[]>([])
+  const [closesAt, setClosesAt] = useState("")
   const [busy, setBusy] = useState(false)
+  const show = shows.find((s) => s.id === showId)
+  const stillIn = housemates.filter((h) => h.status === "in_house")
 
   useEffect(() => {
     if (!showId && shows[0]) setShowId(shows[0].id)
@@ -53,7 +59,7 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
   const load = useCallback(async () => {
     const { data, error } = await db
       .from("polls")
-      .select("id, show_id, question, status, show_results, is_sample, poll_options(id)")
+      .select("id, show_id, question, status, show_results, closes_at, is_sample, poll_options(id)")
       .order("created_at", { ascending: false })
       .limit(50)
     if (error) fail("Couldn't load polls.", error)
@@ -73,6 +79,7 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
     if (!showId) return fail("Choose a show.")
     if (!question.trim()) return fail("Add a question.")
     if (filled.length < 2) return fail("Add at least two options.")
+    if (closesAt && new Date(closesAt).getTime() <= Date.now()) return fail("The closing time is in the past.")
     setBusy(true)
     const { data: poll, error } = await db
       .from("polls")
@@ -82,6 +89,8 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
         question: question.trim(),
         status: open ? "open" : "draft",
         show_results: showResults,
+        // The date picker gives local time; store the exact moment.
+        closes_at: closesAt ? new Date(closesAt).toISOString() : null,
         created_by: userId,
       })
       .select("id")
@@ -102,6 +111,7 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
     ok(open ? "Poll is open. It appears on the show page within a minute." : "Poll saved as a draft.")
     setQuestion("")
     setOptions(blankOptions())
+    setClosesAt("")
     load()
   }
 
@@ -151,6 +161,14 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
             )}
           </Field>
           <div className="sm:col-span-2">
+            <Field
+              label="Closes at (optional)"
+              hint="Optional. Voting stops automatically at this time. With “Only when the poll closes”, results also reveal themselves then, for example after the live eviction show."
+            >
+              {(id) => <TextInput id={id} type="datetime-local" value={closesAt} onChange={(e) => setClosesAt(e.target.value)} />}
+            </Field>
+          </div>
+          <div className="sm:col-span-2">
             <Field label="Question" hint={`${question.length}/200`}>
               {(id) => <TextInput id={id} value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={200} />}
             </Field>
@@ -191,9 +209,16 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
               </div>
             ))}
           </div>
-          <Button variant="secondary" className="mt-3" disabled={options.length >= 8} onClick={() => setOptions([...options, { label: "", housemate_id: "" }])}>
-            Add option
-          </Button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="secondary" disabled={options.length >= MAX_OPTIONS} onClick={() => setOptions([...options, { label: "", housemate_id: "" }])}>
+              Add option
+            </Button>
+            {stillIn.length >= 2 && (
+              <Button variant="secondary" onClick={() => setOptions(stillIn.slice(0, MAX_OPTIONS).map((h) => ({ label: h.name, housemate_id: h.id })))}>
+                Add everyone still in the {show?.venue ?? "house"} ({stillIn.length})
+              </Button>
+            )}
+          </div>
         </fieldset>
 
         <div className="mt-5 flex flex-wrap gap-3">
@@ -218,7 +243,11 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-contrast">{poll.question}</p>
                   <p className="text-xs text-contrast/60">
-                    {poll.status === "open" ? "Open" : poll.status === "closed" ? "Closed" : "Draft"} · {showName(poll.show_id)} · {poll.poll_options.length} options
+                    {poll.status === "open" && poll.closes_at && new Date(poll.closes_at).getTime() <= Date.now()
+                      ? "Closed automatically"
+                      : poll.status === "open" ? "Open" : poll.status === "closed" ? "Closed" : "Draft"}
+                    {poll.closes_at && new Date(poll.closes_at).getTime() > Date.now() && ` until ${formatDate(poll.closes_at)}`} · {showName(poll.show_id)} ·{" "}
+                    {poll.poll_options.length} options
                     {poll.is_sample && " · Sample"}
                   </p>
                 </div>

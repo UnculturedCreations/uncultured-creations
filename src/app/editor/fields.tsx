@@ -84,12 +84,17 @@ export interface EditorShow {
   short_name: string | null
   status: string
   tagline: string | null
+  country: string | null
+  accent_color: string | null
+  cast_singular: string
+  cast_plural: string
+  venue: "house" | "villa"
 }
 
 export function useShows(db: SupabaseClient) {
   const [shows, setShows] = useState<EditorShow[]>([])
   const reload = useCallback(async () => {
-    const { data } = await db.from("shows").select("id, slug, name, short_name, status, tagline").order("sort_order")
+    const { data } = await db.from("shows").select("id, slug, name, short_name, status, tagline, country, accent_color, cast_singular, cast_plural, venue").order("sort_order")
     setShows((data ?? []) as EditorShow[])
   }, [db])
   useEffect(() => {
@@ -101,15 +106,31 @@ export function useShows(db: SupabaseClient) {
 export interface EditorHousemate {
   id: string
   name: string
+  status: string
 }
 
 // Current season and its housemates for a show (used to link poll options to housemates).
 export async function currentSeason(db: SupabaseClient, showId: string) {
   const { data: season } = await db.from("seasons").select("id, name").eq("show_id", showId).eq("is_current", true).maybeSingle()
   if (!season) return { season: null, housemates: [] as EditorHousemate[] }
-  const { data: housemates } = await db.from("housemates").select("id, name").eq("season_id", season.id).order("sort_order")
+  const { data: housemates } = await db.from("housemates").select("id, name, status").eq("season_id", season.id).order("sort_order")
   return { season: season as { id: string; name: string }, housemates: (housemates ?? []) as EditorHousemate[] }
 }
 
 export const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : ""
+
+// Shrink an uploaded image to a small centred square JPEG before it leaves the browser,
+// so housemate images stay tiny (about 20-40 KB) however large the original is.
+export async function toSquareJpeg(file: File, size = 320): Promise<Blob> {
+  const bitmap = await createImageBitmap(file)
+  const side = Math.min(bitmap.width, bitmap.height)
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext("2d")
+  if (!ctx) throw new Error("Canvas unavailable")
+  ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, size, size)
+  bitmap.close()
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't process image"))), "image/jpeg", 0.85))
+}
