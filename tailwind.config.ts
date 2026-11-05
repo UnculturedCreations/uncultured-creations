@@ -11,8 +11,8 @@ const config: Config = {
         contrast: '#F0EBE1',
       },
       fontFamily: {
-        sans: ['var(--font-inter)'],
-        heading: ['var(--font-space-grotesk)'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         fogDrift: {
