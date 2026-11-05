@@ -13,6 +13,7 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0002_poll_voting.sql` | Adds `record_vote()`, callable only with the secret key | Once, after 0001 |
 | `migrations/0003_show_wording_poll_closing_images.sql` | Per-show wording (housemates/islanders, house/villa), automatic poll closing, image field, adds Love Island Nigeria | Once, after 0002 |
 | `migrations/0004_housemate_image_storage.sql` | Creates the public `housemates` image bucket; only editors can upload | Once, after 0003 |
+| `migrations/0005_story_pages.sql` | Feature and Announcement types, story addresses (slugs), feature images with descriptions, `post-images` bucket | Once, after 0004 |
 | `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
 
 To run a file: Supabase dashboard -> **SQL Editor** -> **New query** -> paste the
