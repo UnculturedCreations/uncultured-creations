@@ -363,3 +363,29 @@ export async function getRecentPostSlugs(limit = 200): Promise<{ slug: string; p
   report("getRecentPostSlugs", error)
   return (data ?? []) as { slug: string; published_at: string }[]
 }
+
+// ---------------------------------------------------------------------
+// Eviction-night bingo
+// ---------------------------------------------------------------------
+
+export interface BingoCard {
+  id: string
+  title: string
+  description: string | null
+  size: 4 | 5
+  items: string[]
+}
+
+export async function getBingoCards(showId: string, limit = 2): Promise<BingoCard[]> {
+  if (!supabase) return []
+  let query = supabase
+    .from("bingo_cards")
+    .select("id, title, description, size, items")
+    .eq("show_id", showId)
+    .order("published_at", { ascending: false })
+    .limit(limit)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query
+  report("getBingoCards", error)
+  return (data ?? []) as BingoCard[]
+}

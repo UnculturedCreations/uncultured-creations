@@ -7,6 +7,7 @@ const config: Config = {
       colors: {
         accent: '#0066FF',
         secondary: '#a855f7',
+        // Note: "base" also makes text-base a colour. For 1rem text use text-[1rem], not text-base.
         base: '#121212',
         contrast: '#F0EBE1',
       },

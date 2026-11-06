@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { pageMetadata } from "@/app/data/site"
 import {
+  getBingoCards,
   getCurrentSeason,
   getHousemates,
   getLatestWinner,
@@ -15,6 +16,7 @@ import {
   getShows,
   getUpcomingEvents,
 } from "@/lib/realityReloaded"
+import BingoCard from "@/app/components/fanzone/BingoCard"
 import Countdown from "@/app/components/fanzone/Countdown"
 import HousemateGrid from "@/app/components/fanzone/HousemateGrid"
 import PollCard from "@/app/components/fanzone/PollCard"
@@ -68,13 +70,14 @@ export default async function ShowPage({ params }: Params) {
   }
   if (!show || show.status === "coming_soon") notFound()
 
-  const [season, posts, events, winner, polls, quizzes] = await Promise.all([
+  const [season, posts, events, winner, polls, quizzes, bingoCards] = await Promise.all([
     getCurrentSeason(show.id),
     getShowPosts(show.id),
     getUpcomingEvents(show.id),
     getLatestWinner(show.id),
     getPolls(show.id),
     getQuizzes(show.id),
+    getBingoCards(show.id),
   ])
   const [housemates, rankings] = season
     ? await Promise.all([getHousemates(season.id), getRankings(season.id)])
@@ -159,6 +162,17 @@ export default async function ShowPage({ params }: Params) {
                 <div key={poll.id} className={poll.options.length > 8 ? "md:col-span-2" : undefined}>
                   <PollCard poll={poll} />
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {bingoCards.length > 0 && (
+          <section aria-labelledby="bingo">
+            <SectionHeading id="bingo" title="Bingo" intro="Play along live. Your card is shuffled just for you." />
+            <div className="grid gap-5 lg:grid-cols-2">
+              {bingoCards.map((card) => (
+                <BingoCard key={card.id} card={card} showName={show.name} showSlug={show.slug} />
               ))}
             </div>
           </section>
