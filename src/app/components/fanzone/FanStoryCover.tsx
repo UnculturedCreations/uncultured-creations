@@ -12,9 +12,9 @@ export default function FanStoryCover({
   penName: string
   accent: string | null
   coverUrl: string | null
-  size?: "thumb" | "card" | "large"
+  size?: "thumb" | "card" | "stack" | "large"
 }) {
-  const dims = size === "thumb" ? "w-20" : size === "card" ? "w-24 sm:w-28" : "w-full max-w-xs"
+  const dims = size === "thumb" ? "w-20" : size === "card" ? "w-24 sm:w-28" : size === "stack" ? "w-full" : "w-full max-w-xs"
   if (coverUrl) {
     return (
       // Covers are resized to 600 x 900 when submitted.
@@ -23,7 +23,7 @@ export default function FanStoryCover({
     )
   }
   const color = accent ?? "#0066FF"
-  const titleSize = size === "large" ? "text-2xl" : size === "card" ? "text-[0.8rem] sm:text-sm" : "text-[0.7rem]"
+  const titleSize = size === "large" ? "text-2xl" : size === "stack" ? "text-sm sm:text-base" : size === "card" ? "text-[0.8rem] sm:text-sm" : "text-[0.7rem]"
   return (
     <div
       aria-hidden="true"
@@ -33,7 +33,7 @@ export default function FanStoryCover({
       <span className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/15" />
       <span className="absolute -bottom-8 -left-4 h-20 w-20 rounded-full bg-black/20" />
       <span className={`relative line-clamp-5 font-heading font-bold leading-tight text-white ${titleSize}`}>{title}</span>
-      <span className={`relative truncate text-white/85 ${size === "large" ? "text-sm" : "text-[0.6rem] sm:text-xs"}`}>{penName}</span>
+      <span className={`relative truncate text-white/85 ${size === "large" || size === "stack" ? "text-xs sm:text-sm" : "text-[0.6rem] sm:text-xs"}`}>{penName}</span>
     </div>
   )
 }

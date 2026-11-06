@@ -1,12 +1,11 @@
 import type { Metadata } from "next"
 import { pageMetadata } from "@/app/data/site"
-import Link from "next/link"
-import { getShows, getTopStories, getUpcomingEvents, listFanStories } from "@/lib/realityReloaded"
-import FanStoryCard from "@/app/components/fanzone/FanStoryCard"
+import { getActivePrompts, getShows, getTopStories, getUpcomingEvents, listFanStories } from "@/lib/realityReloaded"
+import FanFictionFeature from "@/app/components/fanzone/FanFictionFeature"
 import ShowCard from "@/app/components/fanzone/ShowCard"
 import StoryCard from "@/app/components/fanzone/StoryCard"
 import YardCta from "@/app/components/fanzone/YardCta"
-import { FanSiteNote, SectionHeading, focusRing } from "@/app/components/fanzone/ui"
+import { FanSiteNote, SectionHeading } from "@/app/components/fanzone/ui"
 
 // Refresh data at most once a minute.
 export const revalidate = 60
@@ -16,7 +15,14 @@ const intro = "Reality TV news, gossip, polls and rankings for fans of every sho
 export const metadata: Metadata = pageMetadata("Reality Reloaded", intro, "/fanzone")
 
 export default async function RealityReloaded() {
-  const [shows, stories, events, picks] = await Promise.all([getShows(), getTopStories(6), getUpcomingEvents(), listFanStories({ featuredOnly: true, limit: 3 })])
+  const [shows, stories, events, picks, latest, prompts] = await Promise.all([
+    getShows(),
+    getTopStories(6),
+    getUpcomingEvents(),
+    listFanStories({ featuredOnly: true, limit: 3 }),
+    listFanStories({ limit: 3 }),
+    getActivePrompts(),
+  ])
   const nextByShow = new Map(events.map((e) => [e.show?.slug, e]))
 
   return (
@@ -62,24 +68,7 @@ export default async function RealityReloaded() {
           </section>
         )}
 
-        <section aria-labelledby="fan-fiction">
-          <SectionHeading id="fan-fiction" title="Fan fiction" intro={picks.length > 0 ? "Editor's picks from our fan writers." : "Stories by reality TV fans, read and approved by our editors."} />
-          {picks.length > 0 && (
-            <div className="mb-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {picks.map((story) => (
-                <FanStoryCard key={story.id} story={story} />
-              ))}
-            </div>
-          )}
-          <div className="flex flex-wrap items-center gap-4">
-            <Link href="/fanzone/fiction" className={`rounded-lg border border-contrast/20 px-5 py-2.5 text-sm font-medium text-contrast hover:border-contrast/40 ${focusRing}`}>
-              Read fan fiction
-            </Link>
-            <Link href="/fanzone/fiction/submit" className={`rounded-sm text-sm text-contrast/75 underline underline-offset-4 hover:text-contrast ${focusRing}`}>
-              Write a story
-            </Link>
-          </div>
-        </section>
+        <FanFictionFeature picks={picks} latest={latest} prompt={prompts[0] ?? null} />
 
         <YardCta />
       </div>
