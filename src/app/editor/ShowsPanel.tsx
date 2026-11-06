@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { Button, Card, Field, Select, TextInput, formatDate, useNotice, useShows, type EditorShow } from "./fields"
+import { Button, Card, Field, Select, TextInput, formatDate, toCoverJpeg, useNotice, useShows, type EditorShow } from "./fields"
 
 const STATUSES = [
   { value: "live", label: "On air" },
@@ -39,6 +39,43 @@ function ShowRow({ db, show, onSaved }: { db: SupabaseClient; show: EditorShow; 
   const [singular, setSingular] = useState(show.cast_singular)
   const [plural, setPlural] = useState(show.cast_plural)
   const [venue, setVenue] = useState(show.venue)
+  const [uploading, setUploading] = useState(false)
+  const BUCKET = "post-images"
+  const pathOf = (url: string | null) => (url ? url.split(`/object/public/${BUCKET}/`)[1] : undefined)
+
+  async function uploadImage(file: File | undefined) {
+    if (!file) return
+    if (!file.type.startsWith("image/")) return fail("Choose an image file.")
+    if (file.size > 20 * 1024 * 1024) return fail("That image is over 20 MB. Choose a smaller one.")
+    setUploading(true)
+    try {
+      const blob = await toCoverJpeg(file, 1200, 630)
+      const path = `shows/${show.id}/${Date.now()}.jpg`
+      const { error: upError } = await db.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg" })
+      if (upError) throw upError
+      const url = db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
+      const { error } = await db.from("shows").update({ image_url: url }).eq("id", show.id)
+      if (error) throw error
+      const old = pathOf(show.image_url)
+      if (old) await db.storage.from(BUCKET).remove([old]) // tidy up the replaced image
+      ok("Image saved. It appears on the site within a minute.")
+      onSaved()
+    } catch (e) {
+      fail("Couldn't upload the image.", e as { message?: string })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function removeImage() {
+    const { error } = await db.from("shows").update({ image_url: null }).eq("id", show.id)
+    if (error) return fail("Couldn't remove the image.", error)
+    const old = pathOf(show.image_url)
+    if (old) await db.storage.from(BUCKET).remove([old])
+    ok("Image removed.")
+    onSaved()
+  }
+
   async function save() {
     if (!singular.trim() || !plural.trim()) return fail("Fill in both cast words.")
     const { error } = await db
@@ -85,6 +122,32 @@ function ShowRow({ db, show, onSaved }: { db: SupabaseClient; show: EditorShow; 
         <Button onClick={save} aria-label={`Save ${show.name}`}>
           Save
         </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        {show.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={show.image_url} alt="" className="aspect-[1200/630] w-40 rounded-lg object-cover" />
+        )}
+        <label className={`cursor-pointer rounded-lg border border-contrast/20 px-4 py-2 text-sm font-medium text-contrast hover:border-contrast/40 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${uploading ? "opacity-50" : ""}`}>
+          {uploading ? "Uploading..." : show.image_url ? "Replace image" : "Upload image"}
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            disabled={uploading}
+            aria-label={`${show.image_url ? "Replace" : "Upload"} image for ${show.name}`}
+            onChange={(e) => {
+              uploadImage(e.target.files?.[0])
+              e.target.value = ""
+            }}
+          />
+        </label>
+        {show.image_url && (
+          <Button variant="secondary" onClick={removeImage} aria-label={`Remove image for ${show.name}`}>
+            Remove image
+          </Button>
+        )}
+        <span className="text-xs text-contrast/60">1200 x 630, cropped automatically. Use your own artwork, not the show&apos;s logo or posters.</span>
       </div>
       {node}
     </li>
@@ -214,7 +277,7 @@ export default function ShowsPanel({ db }: { db: SupabaseClient }) {
         <p className="mt-1 text-sm text-contrast/70">Set each show&apos;s status as seasons start and end, and the words the site uses for its cast.</p>
         <ul className="mt-2 divide-y divide-contrast/10">
           {shows.map((show) => (
-            <ShowRow key={`${show.id}-${show.status}-${show.tagline}-${show.cast_plural}-${show.venue}`} db={db} show={show} onSaved={reload} />
+            <ShowRow key={`${show.id}-${show.status}-${show.tagline}-${show.cast_plural}-${show.venue}-${show.image_url}`} db={db} show={show} onSaved={reload} />
           ))}
         </ul>
         <AddShow db={db} onAdded={reload} />

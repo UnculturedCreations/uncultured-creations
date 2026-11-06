@@ -15,6 +15,7 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0004_housemate_image_storage.sql` | Creates the public `housemates` image bucket; only editors can upload | Once, after 0003 |
 | `migrations/0005_story_pages.sql` | Feature and Announcement types, story addresses (slugs), feature images with descriptions, `post-images` bucket | Once, after 0004 |
 | `migrations/0006_yard_signups.sql` | Yard early-access sign-ups table; only admins can read or delete | Once, after 0005 |
+| `migrations/0007_show_images.sql` | Optional image per show (stored in `post-images`, folder `shows/`) | Once, after 0006 |
 | `functions/join-yard/index.ts` | Edge Function that checks Turnstile, then records a Yard sign-up | Deploy once, like cast-vote |
 | `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
 

@@ -39,11 +39,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { show, available } = await getShowBySlug(slug)
   if (!available) return { title: "Reality Reloaded | Uncultured Creations" }
   if (!show || show.status === "coming_soon") return { title: "Page not found | Uncultured Creations" }
-  return pageMetadata(
+  const meta = pageMetadata(
     show.name,
     show.tagline ?? `${show.name} news, gossip, polls and ${show.cast_singular.toLowerCase()} rankings on Reality Reloaded.`,
     `/fanzone/${show.slug}`,
   )
+  // Use the show's own image for link previews when it has one.
+  if (show.image_url) {
+    const image = { url: show.image_url, width: 1200, height: 630, alt: show.name }
+    meta.openGraph = { ...meta.openGraph, images: [image] }
+    meta.twitter = { ...meta.twitter, images: [image] }
+  }
+  return meta
 }
 
 export default async function ShowPage({ params }: Params) {
@@ -84,27 +91,34 @@ export default async function ShowPage({ params }: Params) {
       />
 
       <div className="relative mx-auto max-w-6xl space-y-16 px-4 py-10 sm:px-6 md:py-14">
-        <header>
-          <Link
-            href="/fanzone"
-            className={`inline-flex items-center gap-1.5 rounded-sm text-sm text-contrast/70 hover:text-contrast ${focusRing}`}
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Reality Reloaded
-          </Link>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <StatusPill status={show.status} />
-            {show.country && <span className="text-sm text-contrast/60">{show.country}</span>}
-            {season && <span className="text-sm text-contrast/60">{season.name}</span>}
-          </div>
-          <h1 className="mt-4 font-heading text-4xl font-bold text-contrast sm:text-6xl">{show.name}</h1>
-          {show.tagline && <p className="mt-4 max-w-prose text-lg text-contrast/85">{show.tagline}</p>}
-          {nextEvent && (
-            <p className="mt-6 inline-flex flex-wrap items-baseline gap-x-2 rounded-2xl border border-contrast/10 bg-contrast/[0.03] px-4 py-3">
-              <span className="font-medium text-contrast">{nextEvent.title}:</span>
-              <Countdown startsAt={nextEvent.starts_at} />
-            </p>
+        <header className={show.image_url ? "grid items-center gap-8 lg:grid-cols-[1fr_minmax(0,28rem)]" : undefined}>
+          {show.image_url && (
+            // Show images are resized to 1200 x 630 when uploaded.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={show.image_url} alt="" width={1200} height={630} className="aspect-[1200/630] w-full rounded-2xl object-cover lg:order-last" />
           )}
+          <div>
+            <Link
+              href="/fanzone"
+              className={`inline-flex items-center gap-1.5 rounded-sm text-sm text-contrast/70 hover:text-contrast ${focusRing}`}
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Reality Reloaded
+            </Link>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <StatusPill status={show.status} />
+              {show.country && <span className="text-sm text-contrast/60">{show.country}</span>}
+              {season && <span className="text-sm text-contrast/60">{season.name}</span>}
+            </div>
+            <h1 className="mt-4 font-heading text-4xl font-bold text-contrast sm:text-6xl">{show.name}</h1>
+            {show.tagline && <p className="mt-4 max-w-prose text-lg text-contrast/85">{show.tagline}</p>}
+            {nextEvent && (
+              <p className="mt-6 inline-flex flex-wrap items-baseline gap-x-2 rounded-2xl border border-contrast/10 bg-contrast/[0.03] px-4 py-3">
+                <span className="font-medium text-contrast">{nextEvent.title}:</span>
+                <Countdown startsAt={nextEvent.starts_at} />
+              </p>
+            )}
+          </div>
         </header>
 
         {!season && (
