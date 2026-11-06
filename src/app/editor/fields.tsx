@@ -134,3 +134,26 @@ export async function toSquareJpeg(file: File, size = 320): Promise<Blob> {
   bitmap.close()
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't process image"))), "image/jpeg", 0.85))
 }
+
+// Crop an image to fill a fixed shape (e.g. 1200 x 630 for link previews) and compress it.
+export async function toCoverJpeg(file: File, width: number, height: number): Promise<Blob> {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.max(width / bitmap.width, height / bitmap.height)
+  const sw = width / scale
+  const sh = height / scale
+  const canvas = document.createElement("canvas")
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext("2d")
+  if (!ctx) throw new Error("Canvas unavailable")
+  ctx.drawImage(bitmap, (bitmap.width - sw) / 2, (bitmap.height - sh) / 2, sw, sh, 0, 0, width, height)
+  bitmap.close()
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't process image"))), "image/jpeg", 0.82))
+}
+
+// URL-friendly words from a title, plus a short random suffix so addresses never clash.
+export function storySlug(title: string) {
+  const words = title.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "")
+  const suffix = Math.random().toString(36).slice(2, 8)
+  return words ? `${words}-${suffix}` : suffix
+}

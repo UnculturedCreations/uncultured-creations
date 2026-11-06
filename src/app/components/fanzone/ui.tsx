@@ -16,6 +16,8 @@ export const KIND_LABEL: Record<PostKind, string> = {
   trending: "Trending",
   recap: "Recap",
   scenario: "What could happen",
+  feature: "Feature",
+  announcement: "Announcement",
 }
 
 export function StatusPill({ status }: { status: ShowStatus }) {

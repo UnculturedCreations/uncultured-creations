@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase"
 const SHOW_SAMPLES = process.env.NEXT_PUBLIC_SHOW_SAMPLE_DATA === "true"
 
 export type ShowStatus = "live" | "upcoming" | "off_season" | "coming_soon"
-export type PostKind = "news" | "gossip" | "trending" | "recap" | "scenario"
+export type PostKind = "news" | "gossip" | "trending" | "recap" | "scenario" | "feature" | "announcement"
 export type HousemateStatus = "in_house" | "evicted" | "walked" | "disqualified" | "winner"
 
 export interface Show {
@@ -35,6 +35,8 @@ export interface ShowRef {
 
 export interface Post {
   id: string
+  slug: string
+  image_url: string | null
   kind: PostKind
   title: string
   summary: string | null
@@ -84,7 +86,7 @@ export interface RankingCategory {
 
 const SHOW_FIELDS = "id, slug, name, short_name, country, status, tagline, accent_color, cast_singular, cast_plural, venue"
 const SHOW_REF = "show:shows(slug, name, short_name, accent_color)"
-const POST_FIELDS = `id, kind, title, summary, source_name, source_url, published_at, ${SHOW_REF}`
+const POST_FIELDS = `id, slug, image_url, kind, title, summary, source_name, source_url, published_at, ${SHOW_REF}`
 
 function report(where: string, error: unknown) {
   if (error) console.error(`[realityReloaded] ${where}:`, error)
@@ -107,13 +109,16 @@ export async function getShowBySlug(slug: string): Promise<{ show: Show | null; 
   return { show: (data as Show | null) ?? null, available: true }
 }
 
-// Latest news, gossip and trending posts across every show (and general posts).
+// Kinds shown in Top stories on the Reality Reloaded home (recaps and scenarios stay on show pages).
+export const TOP_STORY_KINDS: PostKind[] = ["news", "gossip", "trending", "feature", "announcement"]
+
+// Latest top-story posts across every show (and general posts).
 export async function getTopStories(limit = 6): Promise<Post[]> {
   if (!supabase) return []
   let query = supabase
     .from("posts")
     .select(POST_FIELDS)
-    .in("kind", ["news", "gossip", "trending"])
+    .in("kind", TOP_STORY_KINDS)
     .order("published_at", { ascending: false })
     .limit(limit)
   if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
@@ -326,4 +331,34 @@ export async function getQuizzes(showId: string, limit = 3): Promise<Quiz[]> {
       })),
     }))
     .filter((quiz) => quiz.questions.length > 0)
+}
+
+// ---------------------------------------------------------------------
+// Story pages
+// ---------------------------------------------------------------------
+
+export interface FullPost extends Post {
+  body: string | null
+  image_alt: string | null
+}
+
+// available = false means the database could not be reached (not "no such story").
+export async function getPostBySlug(slug: string): Promise<{ post: FullPost | null; available: boolean }> {
+  if (!supabase) return { post: null, available: false }
+  let query = supabase.from("posts").select(`${POST_FIELDS}, body, image_alt`).eq("slug", slug)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query.maybeSingle()
+  report("getPostBySlug", error)
+  if (error) return { post: null, available: false }
+  return { post: (data as unknown as FullPost | null) ?? null, available: true }
+}
+
+// Recent published stories for the sitemap.
+export async function getRecentPostSlugs(limit = 200): Promise<{ slug: string; published_at: string }[]> {
+  if (!supabase) return []
+  let query = supabase.from("posts").select("slug, published_at").order("published_at", { ascending: false }).limit(limit)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query
+  report("getRecentPostSlugs", error)
+  return (data ?? []) as { slug: string; published_at: string }[]
 }
