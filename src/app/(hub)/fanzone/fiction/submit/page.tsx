@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { CONTACT_EMAIL, pageMetadata } from "@/app/data/site"
-import { getShows } from "@/lib/realityReloaded"
+import { getActivePrompts, getShows } from "@/lib/realityReloaded"
 import SubmitStoryForm from "@/app/components/fanzone/SubmitStoryForm"
 import { FAN_FICTION_RULES } from "@/app/components/fanzone/fanFiction"
 import { FanSiteNote } from "@/app/components/fanzone/ui"
@@ -11,10 +11,12 @@ const intro = "Write your own story set in the world of your favourite reality s
 
 export const metadata: Metadata = pageMetadata("Submit your fan fiction", intro, "/fanzone/fiction/submit")
 
-export default async function SubmitFiction({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
-  const shows = ((await getShows()) ?? []).filter((s) => s.status !== "coming_soon")
-  const { show } = await searchParams
+export default async function SubmitFiction({ searchParams }: { searchParams: Promise<{ show?: string; prompt?: string }> }) {
+  const [allShows, prompts] = await Promise.all([getShows(), getActivePrompts()])
+  const shows = (allShows ?? []).filter((s) => s.status !== "coming_soon")
+  const { show, prompt } = await searchParams
   const defaultShowId = shows.find((s) => s.slug === show)?.id
+  const defaultPromptId = prompts.find((p) => p.id === prompt)?.id
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 md:py-16">
@@ -39,7 +41,13 @@ export default async function SubmitFiction({ searchParams }: { searchParams: Pr
         <h2 id="your-story" className="mb-5 font-heading text-2xl font-bold text-contrast">
           Your story
         </h2>
-        <SubmitStoryForm shows={shows.map((s) => ({ id: s.id, name: s.name }))} enabled={Boolean(CONTACT_EMAIL)} defaultShowId={defaultShowId} />
+        <SubmitStoryForm
+          shows={shows.map((s) => ({ id: s.id, name: s.name, accent: s.accent_color }))}
+          prompts={prompts.map((p) => ({ id: p.id, title: p.title }))}
+          enabled={Boolean(CONTACT_EMAIL)}
+          defaultShowId={defaultShowId}
+          defaultPromptId={defaultPromptId}
+        />
       </section>
       <FanSiteNote />
     </main>

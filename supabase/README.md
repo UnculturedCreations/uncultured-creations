@@ -18,6 +18,8 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0007_show_images.sql` | Optional image per show (stored in `post-images`, folder `shows/`) | Once, after 0006 |
 | `migrations/0008_bingo.sql` | Bingo cards per show (4 x 4 or 5 x 5, a list of moments); played and shared entirely in the browser | Once, after 0007 |
 | `migrations/0009_fan_fiction.sql` | Fan fiction submissions and approvals; submitter emails kept separately, admins only | Once, after 0008 |
+| `migrations/0010_fan_fiction_plus.sql` | Covers, genres, content notes, word counts, reactions, editor's picks, weekly writing prompts; `fan-covers` bucket | Once, after 0009 |
+| `functions/react/index.ts` | Edge Function that checks Turnstile, then records a reader's reaction to a story | Deploy once, like cast-vote |
 | `functions/submit-story/index.ts` | Edge Function that checks Turnstile, then stores a fan fiction submission for review | Deploy once, like cast-vote |
 | `functions/join-yard/index.ts` | Edge Function that checks Turnstile, then records a Yard sign-up | Deploy once, like cast-vote |
 | `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
@@ -62,6 +64,11 @@ link use it.
 
 Every submission waits in the editor's **Fan fiction** tab until an editor approves it.
 Writers' emails (optional) are visible to admins only.
+
+Since 0010, `submit-story` also accepts genres, content notes, a writing prompt and an
+optional cover (a small JPEG resized in the browser, checked and stored in `fan-covers`):
+**redeploy it** with the updated code. Reactions use a separate `react` function, deployed
+the same way (Verify JWT off). Writing prompts and editor's picks are managed in the editor.
 
 ## Housemate images
 

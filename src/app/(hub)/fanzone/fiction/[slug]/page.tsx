@@ -3,8 +3,11 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { CONTACT_EMAIL, pageMetadata } from "@/app/data/site"
-import { getFanStoryBySlug } from "@/lib/realityReloaded"
-import { FICTION_DISCLAIMER } from "@/app/components/fanzone/fanFiction"
+import { getFanStoryBySlug, getStoryReactions } from "@/lib/realityReloaded"
+import { FICTION_DISCLAIMER, genreLabel, noteLabel, readingMinutes } from "@/app/components/fanzone/fanFiction"
+import FanStoryCover from "@/app/components/fanzone/FanStoryCover"
+import ReactionBar from "@/app/components/fanzone/ReactionBar"
+import ShareStoryButton from "@/app/components/fanzone/ShareStoryButton"
 import { FanSiteNote, ShowTag, focusRing } from "@/app/components/fanzone/ui"
 
 export const revalidate = 60
@@ -23,6 +26,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!story) return { title: "Page not found | Uncultured Creations" }
   const meta = pageMetadata(`${story.title} (fan fiction)`, story.blurb ?? `A fan fiction story by ${story.pen_name}, on Reality Reloaded.`, `/fanzone/fiction/${story.slug}`)
   meta.openGraph = { ...meta.openGraph, type: "article", publishedTime: story.published_at }
+  // An approved cover is a good preview image; otherwise the site's preview is used.
+  if (story.cover_url) {
+    const image = { url: story.cover_url, width: 600, height: 900, alt: story.title }
+    meta.openGraph = { ...meta.openGraph, images: [image] }
+    meta.twitter = { ...meta.twitter, card: "summary", images: [image] }
+  }
   return meta
 }
 
@@ -39,6 +48,7 @@ export default async function FanStoryPage({ params }: Params) {
     )
   }
   if (!story) notFound()
+  const reactions = await getStoryReactions(story.id)
 
   const back = story.show ? { href: `/fanzone/${story.show.slug}`, label: story.show.name } : { href: "/fanzone", label: "Reality Reloaded" }
   const reportHref = CONTACT_EMAIL
@@ -54,17 +64,37 @@ export default async function FanStoryPage({ params }: Params) {
         </Link>
 
         <header className="mt-6">
+          <div className="mb-6 flex justify-center sm:justify-start">
+            <FanStoryCover title={story.title} penName={story.pen_name} accent={story.show?.accent_color ?? null} coverUrl={story.cover_url} size="large" />
+          </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="rounded-md bg-secondary/20 px-2 py-0.5 text-xs font-medium text-contrast">Fan fiction</span>
+            {story.featured && <span className="rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-white">Editor&apos;s pick</span>}
             {story.show && <ShowTag name={story.show.short_name ?? story.show.name} accent={story.show.accent_color} />}
+            {story.genres.map((g) => (
+              <span key={g} className="text-xs text-contrast/70">
+                {genreLabel(g)}
+              </span>
+            ))}
           </div>
           <h1 className="mt-4 font-heading text-3xl font-bold leading-tight text-contrast sm:text-5xl">{story.title}</h1>
           <p className="mt-3 text-contrast/75">
             by <span className="font-medium text-contrast">{story.pen_name}</span> ·{" "}
             <time dateTime={story.published_at}>
               {new Date(story.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}
-            </time>
+            </time>{" "}
+            · {readingMinutes(story.word_count)} min read
           </p>
+          {story.prompt && (
+            <p className="mt-2 text-sm text-contrast/70">
+              Written for the prompt: <span className="font-medium text-contrast">{story.prompt.title}</span>
+            </p>
+          )}
+          {story.content_notes.length > 0 && (
+            <p className="mt-4 text-sm text-contrast/80">
+              <span className="font-medium text-contrast">Content notes:</span> {story.content_notes.map(noteLabel).join(", ")}
+            </p>
+          )}
           <p className="mt-6 rounded-xl border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-contrast/85">{FICTION_DISCLAIMER}</p>
         </header>
 
@@ -80,7 +110,12 @@ export default async function FanStoryPage({ params }: Params) {
             ))}
         </div>
 
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-contrast/10 pt-6 text-sm">
+        <div className="mt-12 flex flex-wrap items-start justify-between gap-6 border-t border-contrast/10 pt-6">
+          <ReactionBar storyId={story.id} initialCounts={reactions} />
+          <ShareStoryButton title={story.title} penName={story.pen_name} showName={story.show?.name ?? null} accent={story.show?.accent_color ?? null} coverUrl={story.cover_url} />
+        </div>
+
+        <footer className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-contrast/10 pt-6 text-sm">
           <Link
             href={`/fanzone/fiction/submit${story.show ? `?show=${story.show.slug}` : ""}`}
             className={`rounded-lg bg-accent px-5 py-2.5 font-medium text-white ${focusRing}`}
