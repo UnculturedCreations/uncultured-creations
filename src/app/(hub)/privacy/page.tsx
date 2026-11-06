@@ -38,6 +38,18 @@ export default function Privacy() {
       </p>
 
       <div className="mt-10 space-y-10 leading-relaxed text-contrast/85">
+        <Section id="accounts" title="Fan accounts">
+          <p>
+            You can create a fan account by signing in with an account you already have, such as Google. We receive your name, email address
+            and an account identifier from that service; we never see your password and never post anything on your behalf. We also keep the
+            fan name you choose and the date you confirmed you&apos;re 18 or older. Fan accounts are for people aged 18 or older.
+          </p>
+          <p>
+            Your fan name is shown publicly, for example on leaderboards. Your email is never shown to other fans. We keep your account until
+            you delete it, which you can do at any time on your account page; deleting it removes your account and fan name permanently.
+          </p>
+        </Section>
+
         <Section id="yard" title="The Yard early-access sign-up">
           <p>
             If you sign up for early access to The Yard, we keep your email address, whether you run a fanbase or are a fan, and anything else
