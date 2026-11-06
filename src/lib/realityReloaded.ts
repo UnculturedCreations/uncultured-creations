@@ -24,6 +24,7 @@ export interface Show {
   cast_singular: string
   cast_plural: string
   venue: "house" | "villa"
+  image_url: string | null
 }
 
 export interface ShowRef {
@@ -84,7 +85,7 @@ export interface RankingCategory {
   entries: RankingEntry[]
 }
 
-const SHOW_FIELDS = "id, slug, name, short_name, country, status, tagline, accent_color, cast_singular, cast_plural, venue"
+const SHOW_FIELDS = "id, slug, name, short_name, country, status, tagline, accent_color, cast_singular, cast_plural, venue, image_url"
 const SHOW_REF = "show:shows(slug, name, short_name, accent_color)"
 const POST_FIELDS = `id, slug, image_url, kind, title, summary, source_name, source_url, published_at, ${SHOW_REF}`
 

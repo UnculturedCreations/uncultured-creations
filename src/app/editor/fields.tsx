@@ -89,12 +89,13 @@ export interface EditorShow {
   cast_singular: string
   cast_plural: string
   venue: "house" | "villa"
+  image_url: string | null
 }
 
 export function useShows(db: SupabaseClient) {
   const [shows, setShows] = useState<EditorShow[]>([])
   const reload = useCallback(async () => {
-    const { data } = await db.from("shows").select("id, slug, name, short_name, status, tagline, country, accent_color, cast_singular, cast_plural, venue").order("sort_order")
+    const { data } = await db.from("shows").select("id, slug, name, short_name, status, tagline, country, accent_color, cast_singular, cast_plural, venue, image_url").order("sort_order")
     setShows((data ?? []) as EditorShow[])
   }, [db])
   useEffect(() => {

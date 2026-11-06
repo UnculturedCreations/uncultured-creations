@@ -9,7 +9,12 @@ export default function ShowCard({ show, nextEvent }: { show: Show; nextEvent?: 
   const linked = show.status !== "coming_soon"
   const body = (
     <>
-      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: show.accent_color ?? "#0066FF" }} />
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 z-10 h-1" style={{ backgroundColor: show.accent_color ?? "#0066FF" }} />
+      {show.image_url && (
+        // Show images are resized to 1200 x 630 when uploaded.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={show.image_url} alt="" width={1200} height={630} loading="lazy" decoding="async" className="-mx-6 -mt-6 mb-5 aspect-[1200/630] w-[calc(100%+3rem)] max-w-none object-cover" />
+      )}
       <div className="flex items-start justify-between gap-3">
         <StatusPill status={show.status} />
         {show.country && <span className="text-xs text-contrast/60">{show.country}</span>}
