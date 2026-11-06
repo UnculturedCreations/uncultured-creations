@@ -14,6 +14,8 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0003_show_wording_poll_closing_images.sql` | Per-show wording (housemates/islanders, house/villa), automatic poll closing, image field, adds Love Island Nigeria | Once, after 0002 |
 | `migrations/0004_housemate_image_storage.sql` | Creates the public `housemates` image bucket; only editors can upload | Once, after 0003 |
 | `migrations/0005_story_pages.sql` | Feature and Announcement types, story addresses (slugs), feature images with descriptions, `post-images` bucket | Once, after 0004 |
+| `migrations/0006_yard_signups.sql` | Yard early-access sign-ups table; only admins can read or delete | Once, after 0005 |
+| `functions/join-yard/index.ts` | Edge Function that checks Turnstile, then records a Yard sign-up | Deploy once, like cast-vote |
 | `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
 
 To run a file: Supabase dashboard -> **SQL Editor** -> **New query** -> paste the
@@ -35,6 +37,17 @@ Deploying the function (dashboard):
    (add a custom domain here when one is connected).
 
 Never set `TURNSTILE_VERIFY_URL`; it exists only for local testing.
+
+## Yard early-access sign-ups
+
+Deploy `functions/join-yard/index.ts` exactly like `cast-vote`: name it `join-yard`,
+turn **off** "Verify JWT". It uses the same `TURNSTILE_SECRET_KEY` and
+`TURNSTILE_ALLOWED_HOSTNAMES` secrets, so no new secrets are needed.
+
+The sign-up form stays switched off until `NEXT_PUBLIC_CONTACT_EMAIL` is set in Vercel
+(it is the address the privacy notice gives for data requests). Sign-ups appear in the
+editor's **Yard sign-ups** tab, for **admins only**; export them to a spreadsheet there,
+and delete anyone who asks.
 
 ## Housemate images
 

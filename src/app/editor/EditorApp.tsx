@@ -10,14 +10,16 @@ import PollsPanel from "./PollsPanel"
 import QuizzesPanel from "./QuizzesPanel"
 import ShowsPanel from "./ShowsPanel"
 import SeasonsPanel from "./SeasonsPanel"
+import SignupsPanel from "./SignupsPanel"
 
 const TABS = [
   { id: "posts", label: "Posts" },
   { id: "polls", label: "Polls" },
   { id: "quizzes", label: "Quizzes" },
   { id: "seasons", label: "Seasons and rankings" },
+  { id: "signups", label: "Yard sign-ups", adminOnly: true },
   { id: "shows", label: "Shows and schedule" },
-] as const
+] as const satisfies readonly { id: string; label: string; adminOnly?: boolean }[]
 type Tab = (typeof TABS)[number]["id"]
 
 type Role = "loading" | "fan" | "editor" | "admin" | "unknown"
@@ -123,7 +125,7 @@ export default function EditorApp() {
       ) : (
         <>
           <nav aria-label="Editor sections" className="flex flex-wrap gap-2 border-b border-contrast/10 pb-3">
-            {TABS.map((t) => (
+            {TABS.filter((t) => !("adminOnly" in t) || role === "admin").map((t) => (
               <button
                 key={t.id}
                 type="button"
@@ -141,6 +143,7 @@ export default function EditorApp() {
           {tab === "quizzes" && <QuizzesPanel db={db} userId={session.user.id} />}
           {tab === "seasons" && <SeasonsPanel db={db} />}
           {tab === "shows" && <ShowsPanel db={db} />}
+          {tab === "signups" && role === "admin" && <SignupsPanel db={db} />}
         </>
       )}
     </div>

@@ -6,6 +6,10 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://uncultured
 
 export const SITE_NAME = "Uncultured Creations"
 
+// Where people can reach you, including for privacy requests. Set NEXT_PUBLIC_CONTACT_EMAIL in Vercel.
+// Features that collect personal data (the Yard sign-up) stay switched off until it is set.
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || null
+
 export const SITE_DESCRIPTION =
   "A creative hub of bold storytelling, unapologetic fandom and raw creativity: reality TV fandom, original fiction, lyrics, spoken word and experiments."
 

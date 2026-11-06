@@ -11,6 +11,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [shows, stories] = await Promise.all([getShows(), getRecentPostSlugs()])
   return [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${SITE_URL}/fanzone/the-yard`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.2 },
     ...pillars.map((item) => ({
       url: `${SITE_URL}${item.href}`,
       changeFrequency: "weekly" as const,

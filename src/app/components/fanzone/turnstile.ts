@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useRef } from "react"
+
 // Loads Cloudflare Turnstile once and exposes a typed handle.
 
 export interface TurnstileOptions {
@@ -41,4 +43,57 @@ export function loadTurnstile(): Promise<TurnstileApi> {
     })
   }
   return loading
+}
+
+// React hook: prepares an invisible Turnstile check and returns a function that
+// runs it and resolves with a token (or rejects). Shows a challenge only when needed.
+
+export function useTurnstile(siteKey: string | undefined, enabled = true) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const widget = useRef<{ api: TurnstileApi; id: string } | null>(null)
+  const pending = useRef<{ resolve: (t: string) => void; reject: () => void } | null>(null)
+
+  useEffect(() => {
+    if (!enabled || !siteKey || !containerRef.current) return
+    let cancelled = false
+    loadTurnstile()
+      .then((api) => {
+        if (cancelled || !containerRef.current || widget.current) return
+        const id = api.render(containerRef.current, {
+          sitekey: siteKey,
+          execution: "execute",
+          appearance: "interaction-only",
+          callback: (token) => pending.current?.resolve(token),
+          "error-callback": () => pending.current?.reject(),
+          "expired-callback": () => pending.current?.reject(),
+        })
+        widget.current = { api, id }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+      if (widget.current) widget.current.api.remove(widget.current.id)
+      widget.current = null
+    }
+  }, [siteKey, enabled])
+
+  const getToken = useCallback(
+    () =>
+      new Promise<string>((resolve, reject) => {
+        if (!widget.current) return reject()
+        const timer = setTimeout(reject, 30000)
+        pending.current = {
+          resolve: (t) => (clearTimeout(timer), resolve(t)),
+          reject: () => (clearTimeout(timer), reject()),
+        }
+        widget.current.api.execute(widget.current.id)
+      }),
+    [],
+  )
+
+  const reset = useCallback(() => {
+    if (widget.current) widget.current.api.reset(widget.current.id)
+  }, [])
+
+  return { containerRef, getToken, reset }
 }
