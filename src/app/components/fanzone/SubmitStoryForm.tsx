@@ -4,14 +4,34 @@ import { useId, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useTurnstile } from "./turnstile"
 import { focusRing } from "./ui"
+import { CONTENT_NOTES, GENRES } from "./fanFiction"
+import FanStoryCover from "./FanStoryCover"
+import { blobToBase64, toCoverJpeg } from "./imageTools"
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const control = `w-full rounded-lg border border-contrast/20 bg-base px-3 py-2.5 text-contrast placeholder:text-contrast/40 ${focusRing}`
 
-export default function SubmitStoryForm({ shows, enabled, defaultShowId }: { shows: { id: string; name: string }[]; enabled: boolean; defaultShowId?: string }) {
+export default function SubmitStoryForm({
+  shows,
+  prompts,
+  enabled,
+  defaultShowId,
+  defaultPromptId,
+}: {
+  shows: { id: string; name: string; accent: string | null }[]
+  prompts: { id: string; title: string }[]
+  enabled: boolean
+  defaultShowId?: string
+  defaultPromptId?: string
+}) {
   const id = useId()
   const [form, setForm] = useState({ show_id: defaultShowId ?? "", title: "", pen_name: "", blurb: "", body: "", email: "" })
+  const [genres, setGenres] = useState<string[]>([])
+  const [notes, setNotes] = useState<string[]>([])
+  const [promptId, setPromptId] = useState(defaultPromptId ?? "")
+  const [cover, setCover] = useState<{ url: string; base64: string } | null>(null)
+  const [coverMsg, setCoverMsg] = useState("")
   const [agreed, setAgreed] = useState(false)
   const [adult, setAdult] = useState(false)
   const [phase, setPhase] = useState<"idle" | "sending" | "done" | "error">("idle")
@@ -20,12 +40,31 @@ export default function SubmitStoryForm({ shows, enabled, defaultShowId }: { sho
   const { containerRef, getToken, reset } = useTurnstile(SITE_KEY, ready && phase !== "done")
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value })
   const length = form.body.trim().length
+  const accent = shows.find((s) => s.id === form.show_id)?.accent ?? null
+
+  const toggle = (list: string[], value: string, max: number) =>
+    list.includes(value) ? list.filter((v) => v !== value) : list.length >= max ? list : [...list, value]
+
+  async function chooseCover(file: File | undefined) {
+    setCoverMsg("")
+    if (!file) return
+    if (!file.type.startsWith("image/")) return setCoverMsg("Choose an image file.")
+    if (file.size > 20 * 1024 * 1024) return setCoverMsg("That image is over 20 MB. Choose a smaller one.")
+    try {
+      const blob = await toCoverJpeg(file, 600, 900)
+      if (cover) URL.revokeObjectURL(cover.url)
+      setCover({ url: URL.createObjectURL(blob), base64: await blobToBase64(blob) })
+    } catch {
+      setCoverMsg("We couldn't read that image. Try another one.")
+    }
+  }
 
   function problem(): string | null {
     if (!form.title.trim()) return "Give your story a title."
     if (!form.pen_name.trim()) return "Add a pen name: it's how you'll be credited."
     if (length < 300) return `Your story needs at least 300 characters (it has ${length}).`
     if (length > 20000) return "Your story is over 20,000 characters. Please shorten it."
+    if (genres.length === 0) return "Choose at least one genre."
     if (form.email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) return "Please check your email address, or leave it empty."
     if (!agreed) return "Please confirm your story follows the rules."
     if (!adult) return "Please confirm you're 18 or older."
@@ -46,7 +85,7 @@ export default function SubmitStoryForm({ shows, enabled, defaultShowId }: { sho
       const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-story`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, agreed, adult, token }),
+        body: JSON.stringify({ ...form, genres, content_notes: notes, prompt_id: promptId, cover: cover?.base64 ?? null, agreed, adult, token }),
       })
       if (res.ok) return setPhase("done")
       setPhase("error")
@@ -105,6 +144,81 @@ export default function SubmitStoryForm({ shows, enabled, defaultShowId }: { sho
             One-line teaser <span className="font-normal text-contrast/60">(optional)</span>
           </label>
           <input id={`${id}-blurb`} maxLength={300} value={form.blurb} onChange={set("blurb")} className={control} placeholder="Shown on your story's card" />
+        </div>
+        <fieldset className="sm:col-span-2">
+          <legend className="mb-2 text-sm font-medium text-contrast">
+            Genre <span className="font-normal text-contrast/60">(choose 1 to 3)</span>
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {GENRES.map((g) => (
+              <label key={g.value} className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${genres.includes(g.value) ? "border-accent bg-accent/20 text-contrast" : "border-contrast/15 text-contrast/85"}`}>
+                <input type="checkbox" className="sr-only" checked={genres.includes(g.value)} onChange={() => setGenres(toggle(genres, g.value, 3))} />
+                {g.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="sm:col-span-2">
+          <legend className="mb-2 text-sm font-medium text-contrast">
+            Content notes <span className="font-normal text-contrast/60">(optional; helps readers choose)</span>
+          </legend>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-contrast">
+            {CONTENT_NOTES.map((n) => (
+              <label key={n.value} className="flex items-center gap-2">
+                <input type="checkbox" checked={notes.includes(n.value)} onChange={() => setNotes(toggle(notes, n.value, 4))} className="h-4 w-4 accent-[#0066FF]" />
+                {n.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {prompts.length > 0 && (
+          <div className="sm:col-span-2">
+            <label htmlFor={`${id}-prompt`} className="mb-1 block text-sm font-medium text-contrast">
+              Writing prompt <span className="font-normal text-contrast/60">(optional)</span>
+            </label>
+            <select id={`${id}-prompt`} value={promptId} onChange={(e) => setPromptId(e.target.value)} className={control}>
+              <option value="">Not written for a prompt</option>
+              {prompts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className="sm:col-span-2">
+          <p className="mb-2 text-sm font-medium text-contrast">
+            Cover <span className="font-normal text-contrast/60">(optional)</span>
+          </p>
+          <div className="flex flex-wrap items-end gap-4">
+            <FanStoryCover title={form.title || "Your title"} penName={form.pen_name || "Your pen name"} accent={accent} coverUrl={cover?.url ?? null} />
+            <div className="space-y-2 text-sm">
+              <p className="max-w-xs text-contrast/70">
+                {cover ? "Your cover will be checked by an editor with your story." : "Without your own image, your story gets this cover automatically."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <label className={`cursor-pointer rounded-lg border border-contrast/20 px-4 py-2 font-medium text-contrast hover:border-contrast/40 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent`}>
+                  {cover ? "Replace cover" : "Upload your own cover"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    aria-label={cover ? "Replace cover image" : "Upload your own cover image"}
+                    onChange={(e) => {
+                      chooseCover(e.target.files?.[0])
+                      e.target.value = ""
+                    }}
+                  />
+                </label>
+                {cover && (
+                  <button type="button" onClick={() => setCover(null)} className={`rounded-lg border border-contrast/20 px-4 py-2 font-medium text-contrast ${focusRing}`}>
+                    Use automatic cover
+                  </button>
+                )}
+              </div>
+              {coverMsg && <p role="alert" className="text-[#FCA5A5]">{coverMsg}</p>}
+            </div>
+          </div>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor={`${id}-body`} className="mb-1 block text-sm font-medium text-contrast">Your story</label>

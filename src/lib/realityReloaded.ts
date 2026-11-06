@@ -401,6 +401,20 @@ export interface FanStory {
   pen_name: string
   blurb: string | null
   published_at: string
+  genres: string[]
+  content_notes: string[]
+  cover_url: string | null
+  featured: boolean
+  reaction_total: number
+  word_count: number
+  prompt: { id: string; title: string } | null
+  show: ShowRef | null
+}
+
+export interface WritingPrompt {
+  id: string
+  title: string
+  prompt: string
   show: ShowRef | null
 }
 
@@ -408,7 +422,7 @@ export interface FullFanStory extends FanStory {
   body: string
 }
 
-const FAN_STORY_FIELDS = `id, slug, title, pen_name, blurb, published_at, ${SHOW_REF}`
+const FAN_STORY_FIELDS = `id, slug, title, pen_name, blurb, published_at, genres, content_notes, cover_url, featured, reaction_total, word_count, prompt:writing_prompts(id, title), ${SHOW_REF}`
 
 export async function getFanStories(showId: string, limit = 6): Promise<FanStory[]> {
   if (!supabase) return []
@@ -437,4 +451,35 @@ export async function getRecentFanStorySlugs(limit = 200): Promise<{ slug: strin
   const { data, error } = await query
   report("getRecentFanStorySlugs", error)
   return (data ?? []) as { slug: string; published_at: string }[]
+}
+
+// Filtered list for the fan fiction home page.
+export async function listFanStories(opts: { showId?: string; genre?: string; sort?: "new" | "loved"; featuredOnly?: boolean; limit?: number }): Promise<FanStory[]> {
+  if (!supabase) return []
+  let query = supabase.from("fan_stories").select(FAN_STORY_FIELDS)
+  if (opts.showId) query = query.eq("show_id", opts.showId)
+  if (opts.genre) query = query.contains("genres", [opts.genre])
+  if (opts.featuredOnly) query = query.eq("featured", true)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  query = opts.sort === "loved" ? query.order("reaction_total", { ascending: false }).order("published_at", { ascending: false }) : query.order("published_at", { ascending: false })
+  const { data, error } = await query.limit(opts.limit ?? 48)
+  report("listFanStories", error)
+  return (data ?? []) as unknown as FanStory[]
+}
+
+// Active writing prompts, for one show (plus prompts not tied to a show) or for all.
+export async function getActivePrompts(showId?: string): Promise<WritingPrompt[]> {
+  if (!supabase) return []
+  let query = supabase.from("writing_prompts").select(`id, title, prompt, ${SHOW_REF}`).eq("status", "active").order("created_at", { ascending: false })
+  if (showId) query = query.or(`show_id.eq.${showId},show_id.is.null`)
+  const { data, error } = await query.limit(5)
+  report("getActivePrompts", error)
+  return (data ?? []) as unknown as WritingPrompt[]
+}
+
+export async function getStoryReactions(storyId: string): Promise<Record<string, number>> {
+  if (!supabase) return {}
+  const { data, error } = await supabase.rpc("story_reactions", { p_story_id: storyId })
+  report("getStoryReactions", error)
+  return Object.fromEntries(((data ?? []) as { reaction: string; total: number }[]).map((r) => [r.reaction, Number(r.total)]))
 }

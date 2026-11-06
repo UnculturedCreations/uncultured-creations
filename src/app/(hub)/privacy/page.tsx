@@ -57,6 +57,10 @@ export default function Privacy() {
             site admin can see it, to contact you about your story.
           </p>
           <p>
+            If you upload a cover image, we keep that too; it&apos;s published only if your story is approved. Readers can react to stories:
+            like poll votes, reactions are stored against a scrambled code from your browser, never your name or email.
+          </p>
+          <p>
             You keep the rights to your story. We keep it while it&apos;s published or waiting for review, and delete declined stories when we
             tidy up. Ask us at any time to remove your story or your email. Submissions are for people aged 18 or older.
           </p>

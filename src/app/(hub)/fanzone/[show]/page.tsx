@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import { pageMetadata } from "@/app/data/site"
 import {
   getBingoCards,
+  getActivePrompts,
   getCurrentSeason,
   getFanStories,
   getHousemates,
@@ -20,6 +21,7 @@ import {
 import BingoCard from "@/app/components/fanzone/BingoCard"
 import Countdown from "@/app/components/fanzone/Countdown"
 import FanStoryCard from "@/app/components/fanzone/FanStoryCard"
+import PromptBanner from "@/app/components/fanzone/PromptBanner"
 import HousemateGrid from "@/app/components/fanzone/HousemateGrid"
 import PollCard from "@/app/components/fanzone/PollCard"
 import QuizCard from "@/app/components/fanzone/QuizCard"
@@ -72,7 +74,7 @@ export default async function ShowPage({ params }: Params) {
   }
   if (!show || show.status === "coming_soon") notFound()
 
-  const [season, posts, events, winner, polls, quizzes, bingoCards, fanStories] = await Promise.all([
+  const [season, posts, events, winner, polls, quizzes, bingoCards, fanStories, prompts] = await Promise.all([
     getCurrentSeason(show.id),
     getShowPosts(show.id),
     getUpcomingEvents(show.id),
@@ -81,6 +83,7 @@ export default async function ShowPage({ params }: Params) {
     getQuizzes(show.id),
     getBingoCards(show.id),
     getFanStories(show.id),
+    getActivePrompts(show.id),
   ])
   const [housemates, rankings] = season
     ? await Promise.all([getHousemates(season.id), getRankings(season.id)])
@@ -201,6 +204,9 @@ export default async function ShowPage({ params }: Params) {
 
         <section aria-labelledby="fan-fiction">
           <SectionHeading id="fan-fiction" title="Fan fiction" intro={`Stories by ${label} fans, read and approved by our editors.`} />
+          <div className="mb-5">
+            <PromptBanner prompts={prompts} />
+          </div>
           {fanStories.length > 0 && (
             <div className="mb-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {fanStories.map((story) => (
@@ -213,6 +219,9 @@ export default async function ShowPage({ params }: Params) {
             className={`inline-flex rounded-lg border border-contrast/20 px-5 py-2.5 text-sm font-medium text-contrast hover:border-contrast/40 ${focusRing}`}
           >
             {fanStories.length > 0 ? "Write your own story" : "Be the first to write one"}
+          </Link>
+          <Link href={`/fanzone/fiction?show=${show.slug}`} className={`ml-4 rounded-sm text-sm text-contrast/75 underline underline-offset-4 hover:text-contrast ${focusRing}`}>
+            All {label} fan fiction
           </Link>
         </section>
 
