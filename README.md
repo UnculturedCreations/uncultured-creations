@@ -86,6 +86,7 @@ Route groups such as `(hub)` organise files without changing URLs.
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes, for Reality Reloaded | Supabase's publishable key. Public by design; access is enforced by database security rules. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | For poll voting | Cloudflare Turnstile site key (public). Without it, polls show but voting is off. The secret key lives only in Supabase. |
 | `NEXT_PUBLIC_SHOW_SAMPLE_DATA` | No | `true` shows fictional sample content (rows with `is_sample`). Set it for local development and Vercel Preview only; leave it unset in Production. |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | For the Yard sign-up | Contact address in the privacy notice for data requests. The sign-up form stays off until it is set. |
 | `NEXT_PUBLIC_SITE_URL` | No | Public site address for canonical links, the sitemap and link previews. Defaults to `https://uncultured-creations.vercel.app`; set it in Vercel when a custom domain is connected. |
 
 Copy `.env.example` to `.env.local` for local development. There are no secrets: never add Supabase's secret (`service_role`) key to this project. See `supabase/README.md` for the database.

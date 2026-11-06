@@ -1,5 +1,8 @@
-// Invitation to The Yard. The waitlist form is added once a form endpoint exists;
-// until then this sets expectations without a button that goes nowhere.
+import Link from "next/link"
+import { ArrowRight } from "lucide-react"
+import { focusRing } from "./ui"
+
+// Invitation to The Yard, linking to the early-access sign-up.
 export default function YardCta({ showName }: { showName?: string }) {
   return (
     <section aria-labelledby="yard-cta" className="relative overflow-hidden rounded-3xl border border-contrast/10 p-8 sm:p-10">
@@ -8,7 +11,7 @@ export default function YardCta({ showName }: { showName?: string }) {
       <div className="relative max-w-2xl">
         <p className="inline-flex items-center gap-2 rounded-full border border-contrast/15 px-3 py-1 text-xs text-contrast/85">
           <span aria-hidden="true" className="h-2 w-2 rounded-full bg-secondary" />
-          Coming soon
+          Early access, free
         </p>
         <h2 id="yard-cta" className="mt-4 font-heading text-2xl font-bold text-contrast sm:text-3xl">
           {showName ? `Running a ${showName} fanbase? Give it a home.` : "Give your fanbase a home"}
@@ -17,6 +20,13 @@ export default function YardCta({ showName }: { showName?: string }) {
           The Yard is where fanbases organise their votes, track who shows up and crown their most loyal fans every
           week. One yard per fanbase, free for every Resident to join.
         </p>
+        <Link
+          href="/fanzone/the-yard"
+          className={`mt-6 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 font-medium text-white transition-colors hover:bg-accent/85 motion-reduce:transition-none ${focusRing}`}
+        >
+          Join early access
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </div>
     </section>
   )
