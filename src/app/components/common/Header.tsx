@@ -115,7 +115,7 @@ export default function Header() {
               <li>
                 <Link
                   href="/"
-                  className={`block rounded-md border-l-2 border-transparent py-3 pl-3 text-base text-contrast/70 hover:text-contrast ${focusRing}`}
+                  className={`block rounded-md border-l-2 border-transparent py-3 pl-3 text-[1rem] text-contrast/70 hover:text-contrast ${focusRing}`}
                 >
                   Home
                 </Link>
@@ -128,7 +128,7 @@ export default function Header() {
                   <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className={`block rounded-md border-l-2 py-3 pl-3 text-base ${focusRing} ${
+                    className={`block rounded-md border-l-2 py-3 pl-3 text-[1rem] ${focusRing} ${
                       active
                         ? "border-accent text-contrast"
                         : "border-transparent text-contrast/70 hover:text-contrast"

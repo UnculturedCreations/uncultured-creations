@@ -96,7 +96,7 @@ export default async function StoryPage({ params }: Params) {
         )}
 
         {post.body && (
-          <div className="mt-8 space-y-5 text-base leading-relaxed text-contrast/90 sm:text-lg">
+          <div className="mt-8 space-y-5 text-[1rem] leading-relaxed text-contrast/90 sm:text-lg">
             <Body text={post.body} />
           </div>
         )}

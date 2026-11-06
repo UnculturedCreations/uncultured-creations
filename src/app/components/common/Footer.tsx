@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { pillars } from "@/app/data/navigation"
 
 const focusRing =
@@ -9,10 +10,8 @@ export default function Footer() {
     <footer className="border-t border-contrast/10 bg-base text-contrast">
       <div className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 md:flex-row md:justify-between">
         <div className="max-w-sm">
-          <Link
-            href="/"
-            className={`rounded-sm font-heading text-xl font-bold ${focusRing}`}
-          >
+          <Link href="/" className={`inline-flex items-center gap-3 rounded-md font-heading text-xl font-bold ${focusRing}`}>
+            <Image src="/images/landing/logo-temp.png" alt="" width={40} height={40} className="h-10 w-10" />
             Uncultured Creations
           </Link>
           <p className="mt-3 text-sm leading-relaxed text-contrast/70">
