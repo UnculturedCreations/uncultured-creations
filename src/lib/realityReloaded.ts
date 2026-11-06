@@ -389,3 +389,52 @@ export async function getBingoCards(showId: string, limit = 2): Promise<BingoCar
   report("getBingoCards", error)
   return (data ?? []) as BingoCard[]
 }
+
+// ---------------------------------------------------------------------
+// Fan fiction (only editor-approved stories are readable by visitors)
+// ---------------------------------------------------------------------
+
+export interface FanStory {
+  id: string
+  slug: string
+  title: string
+  pen_name: string
+  blurb: string | null
+  published_at: string
+  show: ShowRef | null
+}
+
+export interface FullFanStory extends FanStory {
+  body: string
+}
+
+const FAN_STORY_FIELDS = `id, slug, title, pen_name, blurb, published_at, ${SHOW_REF}`
+
+export async function getFanStories(showId: string, limit = 6): Promise<FanStory[]> {
+  if (!supabase) return []
+  let query = supabase.from("fan_stories").select(FAN_STORY_FIELDS).eq("show_id", showId).order("published_at", { ascending: false }).limit(limit)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query
+  report("getFanStories", error)
+  return (data ?? []) as unknown as FanStory[]
+}
+
+// available = false means the database could not be reached (not "no such story").
+export async function getFanStoryBySlug(slug: string): Promise<{ story: FullFanStory | null; available: boolean }> {
+  if (!supabase) return { story: null, available: false }
+  let query = supabase.from("fan_stories").select(`${FAN_STORY_FIELDS}, body`).eq("slug", slug)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query.maybeSingle()
+  report("getFanStoryBySlug", error)
+  if (error) return { story: null, available: false }
+  return { story: (data as unknown as FullFanStory | null) ?? null, available: true }
+}
+
+export async function getRecentFanStorySlugs(limit = 200): Promise<{ slug: string; published_at: string }[]> {
+  if (!supabase) return []
+  let query = supabase.from("fan_stories").select("slug, published_at").order("published_at", { ascending: false }).limit(limit)
+  if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
+  const { data, error } = await query
+  report("getRecentFanStorySlugs", error)
+  return (data ?? []) as { slug: string; published_at: string }[]
+}

@@ -17,6 +17,8 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0006_yard_signups.sql` | Yard early-access sign-ups table; only admins can read or delete | Once, after 0005 |
 | `migrations/0007_show_images.sql` | Optional image per show (stored in `post-images`, folder `shows/`) | Once, after 0006 |
 | `migrations/0008_bingo.sql` | Bingo cards per show (4 x 4 or 5 x 5, a list of moments); played and shared entirely in the browser | Once, after 0007 |
+| `migrations/0009_fan_fiction.sql` | Fan fiction submissions and approvals; submitter emails kept separately, admins only | Once, after 0008 |
+| `functions/submit-story/index.ts` | Edge Function that checks Turnstile, then stores a fan fiction submission for review | Deploy once, like cast-vote |
 | `functions/join-yard/index.ts` | Edge Function that checks Turnstile, then records a Yard sign-up | Deploy once, like cast-vote |
 | `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
 
@@ -50,6 +52,16 @@ The sign-up form stays switched off until `NEXT_PUBLIC_CONTACT_EMAIL` is set in 
 (it is the address the privacy notice gives for data requests). Sign-ups appear in the
 editor's **Yard sign-ups** tab, for **admins only**; export them to a spreadsheet there,
 and delete anyone who asks.
+
+## Fan fiction
+
+Deploy `functions/submit-story/index.ts` like the other functions: name it `submit-story`,
+turn **off** "Verify JWT". No new secrets. Submissions stay switched off until
+`NEXT_PUBLIC_CONTACT_EMAIL` is set, because the privacy notice and the "Report this story"
+link use it.
+
+Every submission waits in the editor's **Fan fiction** tab until an editor approves it.
+Writers' emails (optional) are visible to admins only.
 
 ## Housemate images
 

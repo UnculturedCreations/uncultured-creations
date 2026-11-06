@@ -6,6 +6,7 @@ import { pageMetadata } from "@/app/data/site"
 import {
   getBingoCards,
   getCurrentSeason,
+  getFanStories,
   getHousemates,
   getLatestWinner,
   getPolls,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/realityReloaded"
 import BingoCard from "@/app/components/fanzone/BingoCard"
 import Countdown from "@/app/components/fanzone/Countdown"
+import FanStoryCard from "@/app/components/fanzone/FanStoryCard"
 import HousemateGrid from "@/app/components/fanzone/HousemateGrid"
 import PollCard from "@/app/components/fanzone/PollCard"
 import QuizCard from "@/app/components/fanzone/QuizCard"
@@ -70,7 +72,7 @@ export default async function ShowPage({ params }: Params) {
   }
   if (!show || show.status === "coming_soon") notFound()
 
-  const [season, posts, events, winner, polls, quizzes, bingoCards] = await Promise.all([
+  const [season, posts, events, winner, polls, quizzes, bingoCards, fanStories] = await Promise.all([
     getCurrentSeason(show.id),
     getShowPosts(show.id),
     getUpcomingEvents(show.id),
@@ -78,6 +80,7 @@ export default async function ShowPage({ params }: Params) {
     getPolls(show.id),
     getQuizzes(show.id),
     getBingoCards(show.id),
+    getFanStories(show.id),
   ])
   const [housemates, rankings] = season
     ? await Promise.all([getHousemates(season.id), getRankings(season.id)])
@@ -195,6 +198,23 @@ export default async function ShowPage({ params }: Params) {
             </div>
           </section>
         )}
+
+        <section aria-labelledby="fan-fiction">
+          <SectionHeading id="fan-fiction" title="Fan fiction" intro={`Stories by ${label} fans, read and approved by our editors.`} />
+          {fanStories.length > 0 && (
+            <div className="mb-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {fanStories.map((story) => (
+                <FanStoryCard key={story.id} story={story} />
+              ))}
+            </div>
+          )}
+          <Link
+            href={`/fanzone/fiction/submit?show=${show.slug}`}
+            className={`inline-flex rounded-lg border border-contrast/20 px-5 py-2.5 text-sm font-medium text-contrast hover:border-contrast/40 ${focusRing}`}
+          >
+            {fanStories.length > 0 ? "Write your own story" : "Be the first to write one"}
+          </Link>
+        </section>
 
         {housemates.length > 0 && (
           <section aria-labelledby="housemates">

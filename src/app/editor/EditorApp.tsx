@@ -12,12 +12,14 @@ import ShowsPanel from "./ShowsPanel"
 import SeasonsPanel from "./SeasonsPanel"
 import SignupsPanel from "./SignupsPanel"
 import BingoPanel from "./BingoPanel"
+import FanFictionPanel from "./FanFictionPanel"
 
 const TABS = [
   { id: "posts", label: "Posts" },
   { id: "polls", label: "Polls" },
   { id: "quizzes", label: "Quizzes" },
   { id: "bingo", label: "Bingo" },
+  { id: "fiction", label: "Fan fiction" },
   { id: "seasons", label: "Seasons and rankings" },
   { id: "signups", label: "Yard sign-ups", adminOnly: true },
   { id: "shows", label: "Shows and schedule" },
@@ -144,6 +146,7 @@ export default function EditorApp() {
           {tab === "polls" && <PollsPanel db={db} userId={session.user.id} />}
           {tab === "quizzes" && <QuizzesPanel db={db} userId={session.user.id} />}
           {tab === "bingo" && <BingoPanel db={db} userId={session.user.id} />}
+          {tab === "fiction" && <FanFictionPanel db={db} userId={session.user.id} isAdmin={role === "admin"} />}
           {tab === "seasons" && <SeasonsPanel db={db} />}
           {tab === "shows" && <ShowsPanel db={db} />}
           {tab === "signups" && role === "admin" && <SignupsPanel db={db} />}

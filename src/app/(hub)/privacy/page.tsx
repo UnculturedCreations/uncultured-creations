@@ -5,7 +5,7 @@ const description = "What personal data Uncultured Creations collects, why, wher
 
 export const metadata: Metadata = pageMetadata("Privacy notice", description, "/privacy")
 
-const LAST_UPDATED = "6 November 2026"
+const LAST_UPDATED = "6 November 2026"  // update when this notice changes
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -50,6 +50,18 @@ export default function Privacy() {
           <p>We keep sign-ups until The Yard&apos;s early access ends, then delete them, or sooner if you ask.</p>
         </Section>
 
+        <Section id="fan-fiction" title="Fan fiction">
+          <p>
+            If you submit a story, we keep your story, its title, your pen name and, only if you give it, your email address. Editors read every
+            submission, and approved stories are published under your pen name. Your email is never published or shown to our editors; only the
+            site admin can see it, to contact you about your story.
+          </p>
+          <p>
+            You keep the rights to your story. We keep it while it&apos;s published or waiting for review, and delete declined stories when we
+            tidy up. Ask us at any time to remove your story or your email. Submissions are for people aged 18 or older.
+          </p>
+        </Section>
+
         <Section id="polls" title="Polls">
           <p>
             To allow one vote per device, your browser stores a random code. When you vote, we store only a scrambled (hashed) version of that
@@ -60,7 +72,7 @@ export default function Privacy() {
 
         <Section id="bot-checks" title="Bot checks">
           <p>
-            Poll votes and sign-ups are protected by Cloudflare Turnstile, which checks that you&apos;re a person rather than an automated
+            Poll votes, sign-ups and story submissions are protected by Cloudflare Turnstile, which checks that you&apos;re a person rather than an automated
             program. To do this, Cloudflare processes technical information such as your IP address and browser details, under Cloudflare&apos;s
             own privacy policy.
           </p>
@@ -68,7 +80,7 @@ export default function Privacy() {
 
         <Section id="services" title="Where data is kept">
           <p>
-            Sign-ups, polls and site content are stored with Supabase, on servers in Ireland in the European Union. The website is hosted by
+            Sign-ups, fan fiction, polls and site content are stored with Supabase, on servers in Ireland in the European Union. The website is hosted by
             Vercel, which processes technical information such as IP addresses to deliver pages and keep the site secure. These providers act
             on our behalf. Because they are outside Nigeria and South Africa, your data is transferred abroad when you use these features.
           </p>
