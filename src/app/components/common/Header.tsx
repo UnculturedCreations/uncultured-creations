@@ -6,6 +6,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { pillars } from "@/app/data/navigation"
+import AccountLink from "./AccountLink"
 
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -68,7 +69,8 @@ export default function Header() {
           </Link>
         )}
 
-        <nav aria-label="Main" className="hidden lg:block">
+        <div className="hidden items-center gap-7 lg:flex">
+        <nav aria-label="Main">
           <ul className="flex items-center gap-7">
             {pillars.map((item) => {
               const active = isActive(pathname, item.href)
@@ -90,6 +92,10 @@ export default function Header() {
             })}
           </ul>
         </nav>
+          <AccountLink
+            className={`inline-flex items-center gap-1.5 rounded-full border border-contrast/20 px-3 py-1.5 text-sm font-medium text-contrast hover:border-contrast/40 ${focusRing}`}
+          />
+        </div>
 
         <button
           ref={toggleRef}
@@ -139,6 +145,9 @@ export default function Header() {
                 </li>
               )
             })}
+            <li className="mt-2 border-t border-contrast/10 pt-2">
+              <AccountLink className={`flex items-center gap-2 rounded-md border-l-2 border-transparent py-3 pl-3 text-[1rem] text-contrast/90 hover:text-contrast ${focusRing}`} />
+            </li>
           </ul>
         </nav>
       )}
