@@ -10,6 +10,8 @@ import {
   getFanStories,
   getHousemates,
   getLatestWinner,
+  getLeaderboard,
+  getPredictionRounds,
   getPolls,
   getQuizzes,
   getRankings,
@@ -23,6 +25,9 @@ import Countdown from "@/app/components/fanzone/Countdown"
 import FanStoryCard from "@/app/components/fanzone/FanStoryCard"
 import PromptBanner from "@/app/components/fanzone/PromptBanner"
 import HousemateGrid from "@/app/components/fanzone/HousemateGrid"
+import LeaderboardTable from "@/app/components/fanzone/LeaderboardTable"
+import MyStanding from "@/app/components/fanzone/MyStanding"
+import PredictionCard from "@/app/components/fanzone/PredictionCard"
 import PollCard from "@/app/components/fanzone/PollCard"
 import QuizCard from "@/app/components/fanzone/QuizCard"
 import RankingsBoard from "@/app/components/fanzone/RankingsBoard"
@@ -74,7 +79,7 @@ export default async function ShowPage({ params }: Params) {
   }
   if (!show || show.status === "coming_soon") notFound()
 
-  const [season, posts, events, winner, polls, quizzes, bingoCards, fanStories, prompts] = await Promise.all([
+  const [season, posts, events, winner, polls, quizzes, bingoCards, fanStories, prompts, rounds] = await Promise.all([
     getCurrentSeason(show.id),
     getShowPosts(show.id),
     getUpcomingEvents(show.id),
@@ -84,10 +89,13 @@ export default async function ShowPage({ params }: Params) {
     getBingoCards(show.id),
     getFanStories(show.id),
     getActivePrompts(show.id),
+    getPredictionRounds(show.id),
   ])
-  const [housemates, rankings] = season
-    ? await Promise.all([getHousemates(season.id), getRankings(season.id)])
-    : [[], []]
+  const [housemates, rankings, leaderboard] = await Promise.all([
+    season ? getHousemates(season.id) : Promise.resolve([]),
+    season ? getRankings(season.id) : Promise.resolve([]),
+    getLeaderboard(show.id, season?.id ?? null, 10),
+  ])
   const nextEvent = events[0]
   const label = show.short_name ?? show.name
 
@@ -159,6 +167,34 @@ export default async function ShowPage({ params }: Params) {
             <p className="text-contrast/70">Nothing posted yet. Check back soon.</p>
           )}
         </section>
+
+        {rounds.length > 0 && (
+          <section aria-labelledby="predictions">
+            <SectionHeading id="predictions" title="Predictions" intro="Call it before the live show. Correct predictions earn points on the season leaderboard." />
+            <div className="grid gap-5 md:grid-cols-2">
+              {rounds.map((round) => (
+                <div key={round.id} className={round.options.length > 8 ? "md:col-span-2" : undefined}>
+                  <PredictionCard round={round} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {(rounds.length > 0 || leaderboard.length > 0) && (
+          <section aria-labelledby="leaderboard">
+            <SectionHeading id="leaderboard" title="Leaderboard" intro={season ? `Top predictors for ${season.name}.` : "Top predictors this season."} />
+            <MyStanding showId={show.id} seasonId={season?.id ?? null} />
+            {leaderboard.length > 0 ? (
+              <LeaderboardTable rows={leaderboard} caption={`Top predictors for ${show.name}`} />
+            ) : (
+              <p className="text-contrast/75">The leaderboard fills up after the first prediction round is decided.</p>
+            )}
+            <Link href={`/fanzone/${show.slug}/leaderboard`} className={`mt-4 inline-flex rounded-sm text-sm text-contrast/75 underline underline-offset-4 hover:text-contrast ${focusRing}`}>
+              Full leaderboard
+            </Link>
+          </section>
+        )}
 
         {polls.length > 0 && (
           <section aria-labelledby="polls">

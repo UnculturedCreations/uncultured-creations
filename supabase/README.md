@@ -20,6 +20,7 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0009_fan_fiction.sql` | Fan fiction submissions and approvals; submitter emails kept separately, admins only | Once, after 0008 |
 | `migrations/0010_fan_fiction_plus.sql` | Covers, genres, content notes, word counts, reactions, editor's picks, weekly writing prompts; `fan-covers` bucket | Once, after 0009 |
 | `migrations/0011_fan_accounts.sql` | Fan accounts: public fan names (unique), first-sign-in confirmation, 18+ record | Once, after 0010 |
+| `migrations/0012_predictions.sql` | Prediction rounds, fans' picks (locked at a set time), results and season leaderboards | Once, after 0011 |
 | `functions/delete-account/index.ts` | Edge Function that lets a signed-in fan delete their own account | Deploy once (Verify JWT off) |
 | `functions/react/index.ts` | Edge Function that checks Turnstile, then records a reader's reaction to a story | Deploy once, like cast-vote |
 | `functions/submit-story/index.ts` | Edge Function that checks Turnstile, then stores a fan fiction submission for review | Deploy once, like cast-vote |
@@ -82,6 +83,14 @@ Editor and admin accounts can't be deleted from `/account`.
 
 Setup: enable the Google provider, add the site and preview addresses under
 **Authentication > URL Configuration**, and turn **Allow new users to sign up** on.
+
+## Predictions
+
+Editors create rounds in the **Predictions** tab (question, points, lock time, options).
+Signed-in fans who finished the welcome step pick one answer, changeable until the lock.
+After the show, **Mark result** (tick several for a double eviction); **Correct result**
+fixes mistakes and the leaderboard recalculates. Leaderboards count resolved rounds in the
+show's current season.
 
 ## Housemate images
 
