@@ -45,6 +45,10 @@ export default function Privacy() {
             fan name you choose and the date you confirmed you&apos;re 18 or older. Fan accounts are for people aged 18 or older.
           </p>
           <p>
+            If you play predictions, we keep your picks with your account to calculate points. Other fans never see your individual picks, only
+            totals once picks close; leaderboards show your fan name, points and number of correct picks. Deleting your account deletes your picks.
+          </p>
+          <p>
             Your fan name is shown publicly, for example on leaderboards. Your email is never shown to other fans. We keep your account until
             you delete it, which you can do at any time on your account page; deleting it removes your account and fan name permanently.
           </p>

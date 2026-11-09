@@ -13,10 +13,12 @@ import SeasonsPanel from "./SeasonsPanel"
 import SignupsPanel from "./SignupsPanel"
 import BingoPanel from "./BingoPanel"
 import FanFictionPanel from "./FanFictionPanel"
+import PredictionsPanel from "./PredictionsPanel"
 
 const TABS = [
   { id: "posts", label: "Posts" },
   { id: "polls", label: "Polls" },
+  { id: "predictions", label: "Predictions" },
   { id: "quizzes", label: "Quizzes" },
   { id: "bingo", label: "Bingo" },
   { id: "fiction", label: "Fan fiction" },
@@ -144,6 +146,7 @@ export default function EditorApp() {
           <p className="text-sm text-contrast/60">Signed in as {session.user.email}. Changes appear on the site within about a minute.</p>
           {tab === "posts" && <PostsPanel db={db} userId={session.user.id} />}
           {tab === "polls" && <PollsPanel db={db} userId={session.user.id} />}
+          {tab === "predictions" && <PredictionsPanel db={db} userId={session.user.id} />}
           {tab === "quizzes" && <QuizzesPanel db={db} userId={session.user.id} />}
           {tab === "bingo" && <BingoPanel db={db} userId={session.user.id} />}
           {tab === "fiction" && <FanFictionPanel db={db} userId={session.user.id} isAdmin={role === "admin"} />}

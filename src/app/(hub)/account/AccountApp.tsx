@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import type { Session } from "@supabase/supabase-js"
 import { getFanClient } from "@/lib/supabaseFan"
 import { focusRing } from "@/app/components/fanzone/ui"
@@ -15,6 +16,12 @@ const PROVIDERS = [
 ] as const
 
 const NAME_RULE = /^[A-Za-z0-9 _.'-]{2,30}$/
+const NEXT_KEY = "uc-auth-next"
+
+// Only same-site paths, so the link can't be used to send fans elsewhere.
+function safeNext(value: string | null): string | null {
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : null
+}
 
 interface Profile {
   display_name: string | null
@@ -45,6 +52,17 @@ export default function AccountApp() {
   const [adult, setAdult] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null)
+  const router = useRouter()
+
+  // Remember where the fan came from (e.g. a prediction), across the sign-in redirect.
+  useEffect(() => {
+    const next = safeNext(new URLSearchParams(window.location.search).get("next"))
+    if (next) {
+      try {
+        sessionStorage.setItem(NEXT_KEY, next)
+      } catch {}
+    }
+  }, [])
 
   // Which sign-in options are switched on.
   useEffect(() => {
@@ -79,6 +97,17 @@ export default function AccountApp() {
   useEffect(() => {
     loadProfile()
   }, [loadProfile])
+
+  // Once signed in and set up, take the fan back to where they started.
+  useEffect(() => {
+    if (!profile?.name_confirmed || !profile.adult_confirmed_at) return
+    let next: string | null = null
+    try {
+      next = safeNext(sessionStorage.getItem(NEXT_KEY))
+      sessionStorage.removeItem(NEXT_KEY)
+    } catch {}
+    if (next) router.replace(next)
+  }, [profile, router])
 
   async function signIn(provider: string) {
     if (!db) return

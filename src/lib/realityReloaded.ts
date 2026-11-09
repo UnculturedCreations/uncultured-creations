@@ -483,3 +483,75 @@ export async function getStoryReactions(storyId: string): Promise<Record<string,
   report("getStoryReactions", error)
   return Object.fromEntries(((data ?? []) as { reaction: string; total: number }[]).map((r) => [r.reaction, Number(r.total)]))
 }
+
+// ---------------------------------------------------------------------
+// Predictions and leaderboards
+// ---------------------------------------------------------------------
+
+export interface PredictionOption {
+  id: string
+  label: string
+  is_correct: boolean
+  housemate: { name: string; color: string | null; image_url: string | null } | null
+}
+
+export interface PredictionRound {
+  id: string
+  question: string
+  points: number
+  locks_at: string
+  status: "open" | "resolved"
+  options: PredictionOption[]
+  // Pick totals per option, available once picks have locked.
+  counts: Record<string, number> | null
+}
+
+export interface LeaderboardRow {
+  rank: number
+  fan_name: string
+  points: number
+  correct: number
+  played: number
+  is_me: boolean
+}
+
+export async function getRoundPickCounts(roundId: string): Promise<Record<string, number> | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc("round_pick_counts", { p_round_id: roundId })
+  report("getRoundPickCounts", error)
+  if (error || !data || (data as unknown[]).length === 0) return null
+  return Object.fromEntries((data as { option_id: string; picks: number }[]).map((r) => [r.option_id, Number(r.picks)]))
+}
+
+// Open rounds first, then the most recently resolved ones.
+export async function getPredictionRounds(showId: string, limit = 4): Promise<PredictionRound[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from("prediction_rounds")
+    .select("id, question, points, locks_at, status, prediction_options(id, label, sort_order, is_correct, housemate:housemates(name, color, image_url))")
+    .eq("show_id", showId)
+    .in("status", ["open", "resolved"])
+    .order("status")
+    .order("locks_at", { ascending: false })
+    .limit(limit)
+  report("getPredictionRounds", error)
+  type Row = Omit<PredictionRound, "options" | "counts"> & { prediction_options: (PredictionOption & { sort_order: number })[] }
+  const rows = (data ?? []) as unknown as Row[]
+  return Promise.all(
+    rows.map(async ({ prediction_options, ...round }) => {
+      const locked = round.status === "resolved" || new Date(round.locks_at).getTime() <= Date.now()
+      return {
+        ...round,
+        options: [...prediction_options].sort((a, b) => a.sort_order - b.sort_order).map(({ id, label, is_correct, housemate }) => ({ id, label, is_correct, housemate })),
+        counts: locked ? await getRoundPickCounts(round.id) : null,
+      }
+    }),
+  )
+}
+
+export async function getLeaderboard(showId: string, seasonId: string | null, limit = 10): Promise<LeaderboardRow[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc("season_leaderboard", { p_show_id: showId, p_season_id: seasonId, p_limit: limit })
+  report("getLeaderboard", error)
+  return ((data ?? []) as LeaderboardRow[]).map((r) => ({ ...r, rank: Number(r.rank), points: Number(r.points), correct: Number(r.correct), played: Number(r.played) }))
+}
