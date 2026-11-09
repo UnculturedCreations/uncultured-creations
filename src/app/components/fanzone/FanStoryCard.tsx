@@ -25,7 +25,7 @@ export default function FanStoryCard({ story }: { story: FanStory }) {
         <p className="mt-0.5 text-sm text-contrast/70">by {story.pen_name}</p>
         {story.blurb && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-contrast/75">{story.blurb}</p>}
         <p className="mt-auto pt-3 text-xs text-contrast/60">
-          {readingMinutes(story.word_count)} min read
+          {story.chapter_count > 1 ? `${story.chapter_count} chapters` : `${readingMinutes(story.word_count)} min read`}
           {story.reaction_total > 0 && (
             <>
               {" · "}

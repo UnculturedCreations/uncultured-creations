@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { CONTACT_EMAIL, pageMetadata } from "@/app/data/site"
 import { getActivePrompts, getShows } from "@/lib/realityReloaded"
-import SubmitStoryForm from "@/app/components/fanzone/SubmitStoryForm"
+import WriterStoryForm from "@/app/components/fanzone/WriterStoryForm"
 import { FAN_FICTION_RULES } from "@/app/components/fanzone/fanFiction"
 import { FanSiteNote } from "@/app/components/fanzone/ui"
 
@@ -41,7 +41,7 @@ export default async function SubmitFiction({ searchParams }: { searchParams: Pr
         <h2 id="your-story" className="mb-5 font-heading text-2xl font-bold text-contrast">
           Your story
         </h2>
-        <SubmitStoryForm
+        <WriterStoryForm
           shows={shows.map((s) => ({ id: s.id, name: s.name, accent: s.accent_color }))}
           prompts={prompts.map((p) => ({ id: p.id, title: p.title }))}
           enabled={Boolean(CONTACT_EMAIL)}

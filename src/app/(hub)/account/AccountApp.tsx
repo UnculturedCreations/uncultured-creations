@@ -147,7 +147,7 @@ export default function AccountApp() {
 
   async function deleteAccount() {
     if (!db || !session) return
-    if (!window.confirm("Delete your account? Your fan name and account details are removed permanently. This can't be undone.")) return
+    if (!window.confirm("Delete your account? Your fan name, picks, comments and unpublished stories are removed permanently. Published stories stay under their pen name; ask us if you want them removed. This can't be undone.")) return
     setBusy(true)
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`, {
@@ -269,6 +269,18 @@ export default function AccountApp() {
           </div>
         </form>
         {status}
+      </div>
+      <div className={card}>
+        <h2 className="font-heading text-lg font-bold text-contrast">Fan fiction</h2>
+        <p className="mt-1 text-sm text-contrast/70">Follow your stories&apos; review, fix declined ones, and add chapters.</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link href="/account/stories" className={primary}>
+            My stories
+          </Link>
+          <Link href="/fanzone/fiction/submit" className={secondary}>
+            Write a story
+          </Link>
+        </div>
       </div>
       <div className={card}>
         <h2 className="font-heading text-lg font-bold text-contrast">Your account</h2>

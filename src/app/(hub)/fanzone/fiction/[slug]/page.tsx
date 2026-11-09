@@ -3,12 +3,13 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { CONTACT_EMAIL, pageMetadata } from "@/app/data/site"
-import { getFanStoryBySlug, getStoryReactions } from "@/lib/realityReloaded"
+import { getFanStoryBySlug, getStoryChapters, getStoryReactions } from "@/lib/realityReloaded"
 import { FICTION_DISCLAIMER, genreLabel, noteLabel, readingMinutes } from "@/app/components/fanzone/fanFiction"
 import FanStoryCover from "@/app/components/fanzone/FanStoryCover"
 import ReactionBar from "@/app/components/fanzone/ReactionBar"
 import ShareStoryButton from "@/app/components/fanzone/ShareStoryButton"
 import StoryComments from "@/app/components/fanzone/StoryComments"
+import { ChapterList, ChapterPager } from "@/app/components/fanzone/ChapterNav"
 import { FanSiteNote, ShowTag, focusRing } from "@/app/components/fanzone/ui"
 
 export const revalidate = 60
@@ -49,7 +50,7 @@ export default async function FanStoryPage({ params }: Params) {
     )
   }
   if (!story) notFound()
-  const reactions = await getStoryReactions(story.id)
+  const [reactions, chapters] = await Promise.all([getStoryReactions(story.id), getStoryChapters(story.id)])
 
   const back = story.show ? { href: `/fanzone/${story.show.slug}`, label: story.show.name } : { href: "/fanzone", label: "Reality Reloaded" }
   const reportHref = CONTACT_EMAIL
@@ -84,7 +85,7 @@ export default async function FanStoryPage({ params }: Params) {
             <time dateTime={story.published_at}>
               {new Date(story.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}
             </time>{" "}
-            · {readingMinutes(story.word_count)} min read
+            · {chapters.length > 0 ? `Chapter 1 · ${readingMinutes(story.word_count)} min read` : `${readingMinutes(story.word_count)} min read`}
           </p>
           {story.prompt && (
             <p className="mt-2 text-sm text-contrast/70">
@@ -96,6 +97,7 @@ export default async function FanStoryPage({ params }: Params) {
               <span className="font-medium text-contrast">Content notes:</span> {story.content_notes.map(noteLabel).join(", ")}
             </p>
           )}
+          <ChapterList slug={story.slug} chapters={chapters} current={1} />
           <p className="mt-6 rounded-xl border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-contrast/85">{FICTION_DISCLAIMER}</p>
         </header>
 
@@ -110,6 +112,8 @@ export default async function FanStoryPage({ params }: Params) {
               </p>
             ))}
         </div>
+
+        <ChapterPager slug={story.slug} total={chapters.length + 1} current={1} />
 
         <div className="mt-12 flex flex-wrap items-start justify-between gap-6 border-t border-contrast/10 pt-6">
           <ReactionBar storyId={story.id} initialCounts={reactions} />

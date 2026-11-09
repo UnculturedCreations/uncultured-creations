@@ -22,9 +22,10 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0011_fan_accounts.sql` | Fan accounts: public fan names (unique), first-sign-in confirmation, 18+ record | Once, after 0010 |
 | `migrations/0012_predictions.sql` | Prediction rounds, fans' picks (locked at a set time), results and season leaderboards | Once, after 0011 |
 | `migrations/0013_story_comments.sql` | Comments on fan fiction: reports (3 hide a comment), spam limits, editor moderation, turning off commenting per fan | Once, after 0012 |
+| `migrations/0014_writers_and_chapters.sql` | Writers submit with their fan account, My stories, chapters (each reviewed), published stories locked | Once, after 0013 |
 | `functions/delete-account/index.ts` | Edge Function that lets a signed-in fan delete their own account | Deploy once (Verify JWT off) |
 | `functions/react/index.ts` | Edge Function that checks Turnstile, then records a reader's reaction to a story | Deploy once, like cast-vote |
-| `functions/submit-story/index.ts` | Edge Function that checks Turnstile, then stores a fan fiction submission for review | Deploy once, like cast-vote |
+| `functions/submit-story/index.ts` | No longer used by the site since 0014 (writers now submit while signed in). Safe to delete in Supabase. | Not needed |
 | `functions/join-yard/index.ts` | Edge Function that checks Turnstile, then records a Yard sign-up | Deploy once, like cast-vote |
 | `functions/cast-vote/index.ts` | Edge Function that checks Turnstile, then records a vote | Deploy once; redeploy after changes |
 
@@ -99,6 +100,14 @@ Signed-in fans comment on approved fan fiction; comments appear straight away. F
 delete their own comments and report others'. A comment reported by three different fans
 is hidden until an editor reviews it in the **Comments** tab (Restore, Delete, or turn off
 commenting for that fan). Limits: 1,000 characters, 5 comments a minute, no repeats.
+
+## Writers and chapters
+
+Since 0014, fans submit stories while signed in. **My stories** (`/account/stories`) shows each
+story's status; writers edit or withdraw stories waiting for review, fix and resubmit declined
+ones, and add chapters to published ones. Chapters wait in the editor's **Fan fiction** tab under
+**Chapters waiting for review**. Writers can't change published work. Limits: 3 stories and 3
+chapters waiting at a time per writer.
 
 ## Housemate images
 
