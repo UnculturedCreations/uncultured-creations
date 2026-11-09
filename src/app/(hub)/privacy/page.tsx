@@ -49,6 +49,12 @@ export default function Privacy() {
             totals once picks close; leaderboards show your fan name, points and number of correct picks. Deleting your account deletes your picks.
           </p>
           <p>
+            If you submit fan fiction while signed in, your stories and chapters are linked to your account so you can follow their review and
+            add chapters. Only the site admin and editors can see which account wrote a story; readers see your pen name. If you delete your
+            account, your unpublished stories are deleted and your published ones stay on the site under your pen name, no longer linked to you.
+            Ask us if you&apos;d like them removed too.
+          </p>
+          <p>
             If you comment on stories, your comments are shown publicly with your fan name. You can delete your own comments at any time. If
             other fans report a comment, our editors review it and may remove it or turn off commenting for an account.
           </p>

@@ -24,6 +24,8 @@ interface StoryRow {
   cover_url: string | null
   featured: boolean
   prompt: { title: string } | null
+  author: { display_name: string | null } | null
+  chapter_count: number
 }
 
 interface PromptRow {
@@ -140,6 +142,82 @@ const FILTERS: { id: Status; label: string }[] = [
   { id: "declined", label: "Declined" },
 ]
 
+interface ChapterRow {
+  id: string
+  number: number
+  title: string | null
+  body: string
+  status: "pending" | "approved" | "declined"
+  published_at: string | null
+  created_at: string
+  story: { title: string; slug: string; pen_name: string } | null
+}
+
+// New chapters for published stories: read, then approve or decline.
+function ChaptersCard({ db, userId }: { db: SupabaseClient; userId: string }) {
+  const { ok, fail, node } = useNotice()
+  const [chapters, setChapters] = useState<ChapterRow[] | null>(null)
+  const load = useCallback(async () => {
+    const { data, error } = await db
+      .from("story_chapters")
+      .select("id, number, title, body, status, published_at, created_at, story:fan_stories(title, slug, pen_name)")
+      .eq("status", "pending")
+      .order("created_at")
+    if (error) fail("Couldn't load chapters.", error)
+    setChapters((data ?? []) as unknown as ChapterRow[])
+  }, [db, fail])
+  useEffect(() => {
+    load()
+  }, [load])
+  async function decide(c: ChapterRow, approve: boolean) {
+    const { error } = await db
+      .from("story_chapters")
+      .update({ status: approve ? "approved" : "declined", published_at: approve ? new Date().toISOString() : null, reviewed_by: userId })
+      .eq("id", c.id)
+    if (error) return fail("Couldn't update the chapter.", error)
+    ok(approve ? `Chapter ${c.number} of "${c.story?.title}" published.` : `Chapter ${c.number} declined. The writer can fix and resubmit it.`)
+    load()
+  }
+  if (!chapters || chapters.length === 0) return null
+  return (
+    <Card>
+      <h2 className="font-heading text-xl font-bold text-contrast">Chapters waiting for review ({chapters.length})</h2>
+      <div className="mt-3">{node}</div>
+      <ul className="mt-2 space-y-4">
+        {chapters.map((c) => (
+          <li key={c.id} className="rounded-xl border border-contrast/10 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-medium text-contrast">
+                  {c.story?.title}: chapter {c.number}
+                  {c.title ? ` (${c.title})` : ""}
+                </p>
+                <p className="text-xs text-contrast/60">
+                  by {c.story?.pen_name} · sent {formatDate(c.created_at)} · {c.body.length.toLocaleString()} characters
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => decide(c, true)} aria-label={`Approve chapter ${c.number} of ${c.story?.title}`}>Approve</Button>
+                <Button variant="secondary" onClick={() => decide(c, false)} aria-label={`Decline chapter ${c.number} of ${c.story?.title}`}>Decline</Button>
+              </div>
+            </div>
+            <details className="mt-3" open>
+              <summary className="cursor-pointer text-sm font-medium text-contrast/80 hover:text-contrast">Read the chapter</summary>
+              <div className="mt-3 max-h-[24rem] space-y-3 overflow-y-auto rounded-xl border border-contrast/10 p-4 text-sm leading-relaxed text-contrast/90">
+                {c.body.split(/\n\s*\n/).map((p, i) => (
+                  <p key={i} className="whitespace-pre-line">
+                    {p.trim()}
+                  </p>
+                ))}
+              </div>
+            </details>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
 export default function FanFictionPanel({ db, userId, isAdmin }: { db: SupabaseClient; userId: string; isAdmin: boolean }) {
   const { shows } = useShows(db)
   const { ok, fail, node } = useNotice()
@@ -151,7 +229,7 @@ export default function FanFictionPanel({ db, userId, isAdmin }: { db: SupabaseC
   const load = useCallback(async () => {
     const { data, error } = await db
       .from("fan_stories")
-      .select("id, slug, show_id, title, pen_name, blurb, body, status, published_at, created_at, genres, content_notes, cover_url, featured, prompt:writing_prompts(title)")
+      .select("id, slug, show_id, title, pen_name, blurb, body, status, published_at, created_at, genres, content_notes, cover_url, featured, chapter_count, prompt:writing_prompts(title), author:profiles!fan_stories_author_id_fkey(display_name)")
       .order("created_at", { ascending: false })
       .limit(200)
     if (error) fail("Couldn't load stories.", error)
@@ -238,6 +316,7 @@ export default function FanFictionPanel({ db, userId, isAdmin }: { db: SupabaseC
   return (
     <div className="space-y-6">
       <PromptsCard db={db} userId={userId} />
+      <ChaptersCard db={db} userId={userId} />
       <Card>
         <h2 className="font-heading text-xl font-bold text-contrast">Fan fiction</h2>
         <p className="mt-1 text-sm text-contrast/70">Read each story fully, and check any uploaded cover, before approving. Approve only stories that follow every rule:</p>
@@ -280,6 +359,8 @@ export default function FanFictionPanel({ db, userId, isAdmin }: { db: SupabaseC
                   {story.content_notes.length > 0 && ` · Notes: ${story.content_notes.map(noteLabel).join(", ")}`}
                   {story.prompt && ` · Prompt: ${story.prompt.title}`}
                   {story.cover_url ? " · Own cover" : " · Automatic cover"}
+                  {story.author?.display_name ? ` · Fan account: ${story.author.display_name}` : ""}
+                  {story.chapter_count > 1 ? ` · ${story.chapter_count} chapters` : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   <label className="cursor-pointer rounded-md border border-contrast/20 px-2.5 py-1 text-contrast hover:border-contrast/40 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent">

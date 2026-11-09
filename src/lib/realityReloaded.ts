@@ -407,6 +407,7 @@ export interface FanStory {
   featured: boolean
   reaction_total: number
   word_count: number
+  chapter_count: number
   prompt: { id: string; title: string } | null
   show: ShowRef | null
 }
@@ -422,7 +423,7 @@ export interface FullFanStory extends FanStory {
   body: string
 }
 
-const FAN_STORY_FIELDS = `id, slug, title, pen_name, blurb, published_at, genres, content_notes, cover_url, featured, reaction_total, word_count, prompt:writing_prompts(id, title), ${SHOW_REF}`
+const FAN_STORY_FIELDS = `id, slug, title, pen_name, blurb, published_at, genres, content_notes, cover_url, featured, reaction_total, word_count, chapter_count, prompt:writing_prompts(id, title), ${SHOW_REF}`
 
 export async function getFanStories(showId: string, limit = 6): Promise<FanStory[]> {
   if (!supabase) return []
@@ -554,4 +555,25 @@ export async function getLeaderboard(showId: string, seasonId: string | null, li
   const { data, error } = await supabase.rpc("season_leaderboard", { p_show_id: showId, p_season_id: seasonId, p_limit: limit })
   report("getLeaderboard", error)
   return ((data ?? []) as LeaderboardRow[]).map((r) => ({ ...r, rank: Number(r.rank), points: Number(r.points), correct: Number(r.correct), played: Number(r.played) }))
+}
+
+// Published chapters after chapter 1 (the story's own text).
+export interface ChapterSummary {
+  number: number
+  title: string | null
+  word_count: number
+}
+
+export async function getStoryChapters(storyId: string): Promise<ChapterSummary[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase.from("story_chapters").select("number, title, word_count").eq("story_id", storyId).order("number")
+  report("getStoryChapters", error)
+  return (data ?? []) as ChapterSummary[]
+}
+
+export async function getChapter(storyId: string, number: number): Promise<(ChapterSummary & { body: string; published_at: string }) | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.from("story_chapters").select("number, title, word_count, body, published_at").eq("story_id", storyId).eq("number", number).maybeSingle()
+  report("getChapter", error)
+  return (data as (ChapterSummary & { body: string; published_at: string }) | null) ?? null
 }
