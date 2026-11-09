@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { FAN_FICTION_RULES, genreLabel, noteLabel } from "@/app/components/fanzone/fanFiction"
 import FanStoryCover from "@/app/components/fanzone/FanStoryCover"
 import { Button, Card, Field, Select, TextInput, formatDate, toCoverJpeg, useNotice, useShows } from "./fields"
+import DeclineBox from "./DeclineBox"
 
 type Status = "pending" | "approved" | "declined"
 
@@ -144,6 +145,7 @@ const FILTERS: { id: Status; label: string }[] = [
 
 interface ChapterRow {
   id: string
+  story_id: string
   number: number
   title: string | null
   body: string
@@ -160,7 +162,7 @@ function ChaptersCard({ db, userId }: { db: SupabaseClient; userId: string }) {
   const load = useCallback(async () => {
     const { data, error } = await db
       .from("story_chapters")
-      .select("id, number, title, body, status, published_at, created_at, story:fan_stories(title, slug, pen_name)")
+      .select("id, story_id, number, title, body, status, published_at, created_at, story:fan_stories(title, slug, pen_name)")
       .eq("status", "pending")
       .order("created_at")
     if (error) fail("Couldn't load chapters.", error)
@@ -169,6 +171,7 @@ function ChaptersCard({ db, userId }: { db: SupabaseClient; userId: string }) {
   useEffect(() => {
     load()
   }, [load])
+  const [declining, setDeclining] = useState<string | null>(null)
   async function decide(c: ChapterRow, approve: boolean) {
     const { error } = await db
       .from("story_chapters")
@@ -198,9 +201,24 @@ function ChaptersCard({ db, userId }: { db: SupabaseClient; userId: string }) {
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => decide(c, true)} aria-label={`Approve chapter ${c.number} of ${c.story?.title}`}>Approve</Button>
-                <Button variant="secondary" onClick={() => decide(c, false)} aria-label={`Decline chapter ${c.number} of ${c.story?.title}`}>Decline</Button>
+                <Button variant="secondary" onClick={() => setDeclining(declining === c.id ? null : c.id)} aria-expanded={declining === c.id} aria-label={`Decline chapter ${c.number} of ${c.story?.title}`}>Decline</Button>
               </div>
             </div>
+            {declining === c.id && (
+              <DeclineBox
+                db={db}
+                userId={userId}
+                storyId={c.story_id}
+                chapterId={c.id}
+                onCancel={() => setDeclining(null)}
+                onDone={(error) => {
+                  if (error) return fail("Couldn't decline the chapter.", error)
+                  ok(`Chapter ${c.number} declined. The writer has been notified with your note.`)
+                  setDeclining(null)
+                  load()
+                }}
+              />
+            )}
             <details className="mt-3" open>
               <summary className="cursor-pointer text-sm font-medium text-contrast/80 hover:text-contrast">Read the chapter</summary>
               <div className="mt-3 max-h-[24rem] space-y-3 overflow-y-auto rounded-xl border border-contrast/10 p-4 text-sm leading-relaxed text-contrast/90">
@@ -225,6 +243,7 @@ export default function FanFictionPanel({ db, userId, isAdmin }: { db: SupabaseC
   const [stories, setStories] = useState<StoryRow[]>([])
   const [counts, setCounts] = useState<Record<Status, number>>({ pending: 0, approved: 0, declined: 0 })
   const [emails, setEmails] = useState<Record<string, string>>({})
+  const [declining, setDeclining] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const { data, error } = await db
@@ -403,10 +422,28 @@ export default function FanFictionPanel({ db, userId, isAdmin }: { db: SupabaseC
                     <Button variant="secondary" onClick={() => setStatus(story, "pending")} aria-label={`Unpublish ${story.title}`}>Unpublish</Button>
                   </>
                 )}
-                {story.status === "pending" && <Button variant="secondary" onClick={() => setStatus(story, "declined")} aria-label={`Decline ${story.title}`}>Decline</Button>}
+                {story.status === "pending" && (
+                  <Button variant="secondary" onClick={() => setDeclining(declining === story.id ? null : story.id)} aria-expanded={declining === story.id} aria-label={`Decline ${story.title}`}>
+                    Decline
+                  </Button>
+                )}
                 <Button variant="danger" onClick={() => remove(story)} aria-label={`Delete ${story.title}`}>Delete</Button>
               </div>
             </div>
+            {declining === story.id && (
+              <DeclineBox
+                db={db}
+                userId={userId}
+                storyId={story.id}
+                onCancel={() => setDeclining(null)}
+                onDone={(error) => {
+                  if (error) return fail("Couldn't decline the story.", error)
+                  ok(`"${story.title}" declined.${story.author ? " The writer has been notified with your note." : ""}`)
+                  setDeclining(null)
+                  load()
+                }}
+              />
+            )}
             {story.blurb && <p className="mt-3 text-sm italic text-contrast/80">{story.blurb}</p>}
             <details className="mt-3" open={story.status === "pending"}>
               <summary className="cursor-pointer text-sm font-medium text-contrast/80 hover:text-contrast">Read the story</summary>

@@ -280,6 +280,9 @@ export default function AccountApp() {
           <Link href="/fanzone/fiction/submit" className={secondary}>
             Write a story
           </Link>
+          <Link href="/account/notifications" className={secondary}>
+            Notifications
+          </Link>
         </div>
       </div>
       <div className={card}>

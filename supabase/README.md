@@ -23,6 +23,7 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0012_predictions.sql` | Prediction rounds, fans' picks (locked at a set time), results and season leaderboards | Once, after 0011 |
 | `migrations/0013_story_comments.sql` | Comments on fan fiction: reports (3 hide a comment), spam limits, editor moderation, turning off commenting per fan | Once, after 0012 |
 | `migrations/0014_writers_and_chapters.sql` | Writers submit with their fan account, My stories, chapters (each reviewed), published stories locked | Once, after 0013 |
+| `migrations/0015_review_notes_and_notifications.sql` | Required notes when declining; in-app notifications (stories, chapters, comments, prediction results) | Once, after 0014 |
 | `functions/delete-account/index.ts` | Edge Function that lets a signed-in fan delete their own account | Deploy once (Verify JWT off) |
 | `functions/react/index.ts` | Edge Function that checks Turnstile, then records a reader's reaction to a story | Deploy once, like cast-vote |
 | `functions/submit-story/index.ts` | No longer used by the site since 0014 (writers now submit while signed in). Safe to delete in Supabase. | Not needed |
@@ -108,6 +109,14 @@ story's status; writers edit or withdraw stories waiting for review, fix and res
 ones, and add chapters to published ones. Chapters wait in the editor's **Fan fiction** tab under
 **Chapters waiting for review**. Writers can't change published work. Limits: 3 stories and 3
 chapters waiting at a time per writer.
+
+## Notifications and review notes
+
+Declining a story or chapter requires a reason or a note; the writer sees it on **My stories**.
+Fans get in-app notifications (bell in the header, `/account/notifications`) when their story or
+chapter is published or declined, someone comments on their story, or a prediction result (or
+correction) is in. The database creates them automatically. Email notifications can be added
+later on top of the same table once email sending is set up.
 
 ## Housemate images
 

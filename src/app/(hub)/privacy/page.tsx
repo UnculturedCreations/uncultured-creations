@@ -59,6 +59,11 @@ export default function Privacy() {
             other fans report a comment, our editors review it and may remove it or turn off commenting for an account.
           </p>
           <p>
+            We keep in-app notifications for you, for example when your story is published or a prediction result is in. You can clear them at
+            any time, and they&apos;re deleted with your account. If an editor declines your story, their note is visible only to you and the
+            editors.
+          </p>
+          <p>
             Your fan name is shown publicly, for example on leaderboards. Your email is never shown to other fans. We keep your account until
             you delete it, which you can do at any time on your account page; deleting it removes your account and fan name permanently.
           </p>
