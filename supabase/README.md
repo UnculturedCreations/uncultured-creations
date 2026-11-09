@@ -21,6 +21,7 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0010_fan_fiction_plus.sql` | Covers, genres, content notes, word counts, reactions, editor's picks, weekly writing prompts; `fan-covers` bucket | Once, after 0009 |
 | `migrations/0011_fan_accounts.sql` | Fan accounts: public fan names (unique), first-sign-in confirmation, 18+ record | Once, after 0010 |
 | `migrations/0012_predictions.sql` | Prediction rounds, fans' picks (locked at a set time), results and season leaderboards | Once, after 0011 |
+| `migrations/0013_story_comments.sql` | Comments on fan fiction: reports (3 hide a comment), spam limits, editor moderation, turning off commenting per fan | Once, after 0012 |
 | `functions/delete-account/index.ts` | Edge Function that lets a signed-in fan delete their own account | Deploy once (Verify JWT off) |
 | `functions/react/index.ts` | Edge Function that checks Turnstile, then records a reader's reaction to a story | Deploy once, like cast-vote |
 | `functions/submit-story/index.ts` | Edge Function that checks Turnstile, then stores a fan fiction submission for review | Deploy once, like cast-vote |
@@ -91,6 +92,13 @@ Signed-in fans who finished the welcome step pick one answer, changeable until t
 After the show, **Mark result** (tick several for a double eviction); **Correct result**
 fixes mistakes and the leaderboard recalculates. Leaderboards count resolved rounds in the
 show's current season.
+
+## Comments
+
+Signed-in fans comment on approved fan fiction; comments appear straight away. Fans can
+delete their own comments and report others'. A comment reported by three different fans
+is hidden until an editor reviews it in the **Comments** tab (Restore, Delete, or turn off
+commenting for that fan). Limits: 1,000 characters, 5 comments a minute, no repeats.
 
 ## Housemate images
 

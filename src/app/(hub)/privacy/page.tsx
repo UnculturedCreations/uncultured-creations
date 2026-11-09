@@ -49,6 +49,10 @@ export default function Privacy() {
             totals once picks close; leaderboards show your fan name, points and number of correct picks. Deleting your account deletes your picks.
           </p>
           <p>
+            If you comment on stories, your comments are shown publicly with your fan name. You can delete your own comments at any time. If
+            other fans report a comment, our editors review it and may remove it or turn off commenting for an account.
+          </p>
+          <p>
             Your fan name is shown publicly, for example on leaderboards. Your email is never shown to other fans. We keep your account until
             you delete it, which you can do at any time on your account page; deleting it removes your account and fan name permanently.
           </p>

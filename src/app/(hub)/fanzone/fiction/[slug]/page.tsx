@@ -8,6 +8,7 @@ import { FICTION_DISCLAIMER, genreLabel, noteLabel, readingMinutes } from "@/app
 import FanStoryCover from "@/app/components/fanzone/FanStoryCover"
 import ReactionBar from "@/app/components/fanzone/ReactionBar"
 import ShareStoryButton from "@/app/components/fanzone/ShareStoryButton"
+import StoryComments from "@/app/components/fanzone/StoryComments"
 import { FanSiteNote, ShowTag, focusRing } from "@/app/components/fanzone/ui"
 
 export const revalidate = 60
@@ -114,6 +115,8 @@ export default async function FanStoryPage({ params }: Params) {
           <ReactionBar storyId={story.id} initialCounts={reactions} />
           <ShareStoryButton title={story.title} penName={story.pen_name} showName={story.show?.name ?? null} accent={story.show?.accent_color ?? null} coverUrl={story.cover_url} />
         </div>
+
+        <StoryComments storyId={story.id} />
 
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-contrast/10 pt-6 text-sm">
           <Link
