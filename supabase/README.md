@@ -24,6 +24,7 @@ quizzes) lives in Supabase. Project: `uncultured-creations` (region eu-west-1).
 | `migrations/0013_story_comments.sql` | Comments on fan fiction: reports (3 hide a comment), spam limits, editor moderation, turning off commenting per fan | Once, after 0012 |
 | `migrations/0014_writers_and_chapters.sql` | Writers submit with their fan account, My stories, chapters (each reviewed), published stories locked | Once, after 0013 |
 | `migrations/0015_review_notes_and_notifications.sql` | Required notes when declining; in-app notifications (stories, chapters, comments, prediction results) | Once, after 0014 |
+| `migrations/0016_show_active_switch.sql` | Active switch per show: inactive shows are hidden from the site without deleting anything | Once, after 0015 |
 | `functions/delete-account/index.ts` | Edge Function that lets a signed-in fan delete their own account | Deploy once (Verify JWT off) |
 | `functions/react/index.ts` | Edge Function that checks Turnstile, then records a reader's reaction to a story | Deploy once, like cast-vote |
 | `functions/submit-story/index.ts` | No longer used by the site since 0014 (writers now submit while signed in). Safe to delete in Supabase. | Not needed |

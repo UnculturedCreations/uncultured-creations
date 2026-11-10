@@ -66,7 +66,7 @@ export default async function StoryPage({ params }: Params) {
   }
   if (!post) notFound()
 
-  const back = post.show ? { href: `/fanzone/${post.show.slug}`, label: post.show.name } : { href: "/fanzone", label: "Reality Reloaded" }
+  const back = post.show && post.show.is_active !== false ? { href: `/fanzone/${post.show.slug}`, label: post.show.name } : { href: "/fanzone", label: "Reality Reloaded" }
   const published = new Date(post.published_at)
 
   return (
