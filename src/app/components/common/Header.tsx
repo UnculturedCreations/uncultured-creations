@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { pillars } from "@/app/data/navigation"
 import AccountLink from "./AccountLink"
+import NotificationBell from "./NotificationBell"
 
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -92,6 +93,7 @@ export default function Header() {
             })}
           </ul>
         </nav>
+          <NotificationBell className={`inline-flex rounded-full p-1.5 text-contrast/80 hover:text-contrast ${focusRing}`} />
           <AccountLink
             className={`inline-flex items-center gap-1.5 rounded-full border border-contrast/20 px-3 py-1.5 text-sm font-medium text-contrast hover:border-contrast/40 ${focusRing}`}
           />
@@ -146,6 +148,9 @@ export default function Header() {
               )
             })}
             <li className="mt-2 border-t border-contrast/10 pt-2">
+              <NotificationBell variant="text" className={`flex items-center gap-2 rounded-md border-l-2 border-transparent py-3 pl-3 text-[1rem] text-contrast/90 hover:text-contrast ${focusRing}`} />
+            </li>
+            <li>
               <AccountLink className={`flex items-center gap-2 rounded-md border-l-2 border-transparent py-3 pl-3 text-[1rem] text-contrast/90 hover:text-contrast ${focusRing}`} />
             </li>
           </ul>

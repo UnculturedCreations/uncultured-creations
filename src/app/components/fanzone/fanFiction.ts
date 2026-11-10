@@ -43,3 +43,17 @@ export const noteLabel = (v: string) => CONTENT_NOTES.find((n) => n.value === v)
 
 // About 200 words a minute; never less than one minute.
 export const readingMinutes = (words: number) => Math.max(1, Math.round(words / 200))
+
+// Reasons an editor can give when declining a story or chapter (must match migration 0015).
+export const DECLINE_REASONS = [
+  { value: "sexual_content", label: "Sexual content" },
+  { value: "harassment", label: "Hate, harassment or bullying" },
+  { value: "presented_as_fact", label: "Reads as real events, not clearly fiction" },
+  { value: "not_original", label: "Not original writing" },
+  { value: "children", label: "Involves children" },
+  { value: "too_short", label: "Too short or unfinished" },
+  { value: "cover_image", label: "Cover image isn't allowed" },
+  { value: "other", label: "Something else (see note)" },
+] as const
+
+export const declineReasonLabel = (v: string) => DECLINE_REASONS.find((r) => r.value === v)?.label ?? v

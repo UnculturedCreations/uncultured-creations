@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { loadWriter, type Writer } from "@/app/components/fanzone/writer"
 import { focusRing, timeAgo } from "@/app/components/fanzone/ui"
+import { declineReasonLabel } from "@/app/components/fanzone/fanFiction"
 
 interface Chapter {
   id: string
@@ -29,11 +30,30 @@ const STATUS = {
 
 const button = `rounded-lg border border-contrast/20 px-3 py-1.5 text-sm font-medium text-contrast hover:border-contrast/40 ${focusRing}`
 
+// The editor's reasons and note for something that wasn't published.
+function EditorNote({ note }: { note?: { reasons: string[]; note: string | null } }) {
+  return (
+    <div className="mt-3 rounded-xl border border-[#FCA5A5]/30 bg-[#FCA5A5]/[0.06] p-3 text-sm">
+      <p className="font-medium text-contrast">Editor&apos;s note</p>
+      {note ? (
+        <>
+          {note.reasons.length > 0 && <p className="mt-1 text-contrast/85">{note.reasons.map(declineReasonLabel).join(" · ")}</p>}
+          {note.note && <p className="mt-1 whitespace-pre-line text-contrast/85">{note.note}</p>}
+        </>
+      ) : (
+        <p className="mt-1 text-contrast/80">Check it against the rules, make changes and resubmit.</p>
+      )}
+    </div>
+  )
+}
+
 export default function MyStories() {
   const [writer, setWriter] = useState<Writer | undefined>(undefined)
   const [stories, setStories] = useState<MyStory[] | null>(null)
   const [comments, setComments] = useState<Record<string, number>>({})
   const [message, setMessage] = useState("")
+  // Latest editor note for each declined story ("s:<id>") or chapter ("c:<id>").
+  const [notes, setNotes] = useState<Record<string, { reasons: string[]; note: string | null }>>({})
 
   const load = useCallback(async (w: Writer) => {
     if (!w) return
@@ -43,6 +63,12 @@ export default function MyStories() {
       .eq("author_id", w.userId)
       .order("created_at", { ascending: false })
     setStories((data ?? []) as MyStory[])
+    const { data: noteRows } = await w.db.from("review_notes").select("story_id, chapter_id, reasons, note, created_at").order("created_at")
+    const latest: Record<string, { reasons: string[]; note: string | null }> = {}
+    for (const n of (noteRows ?? []) as { story_id: string; chapter_id: string | null; reasons: string[]; note: string | null }[]) {
+      latest[n.chapter_id ? `c:${n.chapter_id}` : `s:${n.story_id}`] = { reasons: n.reasons, note: n.note } // later notes replace earlier ones
+    }
+    setNotes(latest)
     const { data: counts } = await w.db.rpc("my_story_comment_counts")
     setComments(Object.fromEntries(((counts ?? []) as { story_id: string; comments: number }[]).map((c) => [c.story_id, Number(c.comments)])))
   }, [])
@@ -134,9 +160,7 @@ export default function MyStories() {
                     )}
                   </div>
                 </div>
-                {s.status === "declined" && (
-                  <p className="mt-3 text-sm text-contrast/75">An editor didn&apos;t publish this one. Check it against the rules, make changes and resubmit.</p>
-                )}
+                {s.status === "declined" && <EditorNote note={notes[`s:${s.id}`]} />}
                 {chapters.length > 0 && (
                   <ul className="mt-4 divide-y divide-contrast/10 border-t border-contrast/10">
                     {chapters.map((c) => (
@@ -146,6 +170,11 @@ export default function MyStories() {
                           {c.title ? `: ${c.title}` : ""}
                           <span className={`ml-2 rounded-md px-2 py-0.5 text-xs ${STATUS[c.status].tone}`}>{STATUS[c.status].label}</span>
                         </span>
+                        {c.status === "declined" && (
+                          <span className="basis-full">
+                            <EditorNote note={notes[`c:${c.id}`]} />
+                          </span>
+                        )}
                         {c.status !== "approved" && (
                           <span className="flex gap-2">
                             <Link href={`/account/stories/${s.id}/chapter?edit=${c.id}`} className={button} aria-label={`${c.status === "declined" ? "Fix and resubmit" : "Edit"} chapter ${c.number} of ${s.title}`}>
