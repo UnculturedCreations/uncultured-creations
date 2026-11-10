@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { Button, Card, Field, Select, TextInput, currentSeason, formatDate, useNotice, useShows, type EditorHousemate } from "./fields"
+import { Button, Card, Field, Select, TextInput, currentSeason, formatDate, toLocalInput, useNotice, useShows, type EditorHousemate } from "./fields"
 
 interface PollRow {
   id: string
@@ -21,7 +21,7 @@ const RESULTS = [
   { value: "after_close", label: "Only when the poll closes" },
 ]
 
-type Option = { label: string; housemate_id: string }
+type Option = { id?: string; label: string; housemate_id: string } // id: an option that already exists
 // Enough for any week, however many housemates are up for eviction.
 const MAX_OPTIONS = 50
 const blankOptions = (): Option[] => [
@@ -41,6 +41,9 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
   const [housemates, setHousemates] = useState<EditorHousemate[]>([])
   const [closesAt, setClosesAt] = useState("")
   const [busy, setBusy] = useState(false)
+  // Editing: the poll being changed, how many votes it has, and its original closing time.
+  const [editing, setEditing] = useState<{ id: string; votes: number; closesAt: string; optionIds: string[] } | null>(null)
+  const locked = (editing?.votes ?? 0) > 0 // after the first vote, options can't be added or removed
   const show = shows.find((s) => s.id === showId)
   const stillIn = housemates.filter((h) => h.status === "in_house")
 
@@ -72,6 +75,77 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
 
   const setOption = (i: number, patch: Partial<Option>) =>
     setOptions(options.map((o, j) => (j === i ? { ...o, ...patch } : o)))
+
+  function resetForm() {
+    setEditing(null)
+    setQuestion("")
+    setOptions(blankOptions())
+    setClosesAt("")
+    setShowResults("after_vote")
+  }
+
+  async function edit(poll: PollRow) {
+    clear()
+    const { data, error } = await db
+      .from("polls")
+      .select("id, show_id, question, show_results, closes_at, poll_options(id, label, housemate_id, sort_order)")
+      .eq("id", poll.id)
+      .single()
+    if (error || !data) return fail("Couldn't open the poll.", error)
+    const { data: counts } = await db.rpc("poll_results", { p_poll_id: poll.id })
+    const votes = ((counts ?? []) as { votes: number }[]).reduce((a, c) => a + Number(c.votes), 0)
+    const opts = [...(data.poll_options as { id: string; label: string; housemate_id: string | null; sort_order: number }[])].sort((a, b) => a.sort_order - b.sort_order)
+    setShowId(data.show_id)
+    setQuestion(data.question)
+    setShowResults(data.show_results)
+    setClosesAt(toLocalInput(data.closes_at))
+    setOptions(opts.map((o) => ({ id: o.id, label: o.label, housemate_id: o.housemate_id ?? "" })))
+    setEditing({ id: data.id, votes, closesAt: toLocalInput(data.closes_at), optionIds: opts.map((o) => o.id) })
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  // Saving an edit: options that exist are updated in place, so their votes are kept.
+  async function saveEdit() {
+    if (!editing) return
+    clear()
+    const filled = options.filter((o) => o.label.trim())
+    if (!question.trim()) return fail("Add a question.")
+    if (filled.length < 2) return fail("Keep at least two options.")
+    if (closesAt && closesAt !== editing.closesAt && new Date(closesAt).getTime() <= Date.now()) return fail("The new closing time is in the past.")
+    setBusy(true)
+    const { error } = await db
+      .from("polls")
+      .update({ ...(locked ? {} : { show_id: showId }), question: question.trim(), show_results: showResults, closes_at: closesAt ? new Date(closesAt).toISOString() : null })
+      .eq("id", editing.id)
+    if (error) {
+      setBusy(false)
+      return fail("Couldn't save the poll.", error)
+    }
+    try {
+      for (const [i, o] of filled.entries()) {
+        const row = { label: o.label.trim(), housemate_id: o.housemate_id || null, sort_order: i + 1 }
+        const { error: oError } = o.id
+          ? await db.from("poll_options").update(row).eq("id", o.id)
+          : await db.from("poll_options").insert({ ...row, poll_id: editing.id })
+        if (oError) throw oError
+      }
+      // Options taken out of the list are deleted (only possible before the first vote).
+      if (!locked) {
+        const dropped = editing.optionIds.filter((id) => !options.some((o) => o.id === id))
+        if (dropped.length) {
+          const { error: dError } = await db.from("poll_options").delete().in("id", dropped)
+          if (dError) throw dError
+        }
+      }
+    } catch (e) {
+      setBusy(false)
+      return fail("Couldn't save the poll options.", e as { message?: string })
+    }
+    setBusy(false)
+    ok("Poll updated. Changes appear on the site within a minute.")
+    resetForm()
+    load()
+  }
 
   async function create(open: boolean) {
     clear()
@@ -126,6 +200,7 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
     if (!window.confirm(`Delete "${poll.question}" and all its votes? This can't be undone.`)) return
     const { error } = await db.from("polls").delete().eq("id", poll.id)
     if (error) return fail("Couldn't delete the poll.", error)
+    if (editing?.id === poll.id) resetForm()
     ok("Poll deleted.")
     load()
   }
@@ -135,12 +210,18 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
   return (
     <div className="space-y-6">
       <Card>
-        <h2 className="font-heading text-xl font-bold text-contrast">New poll</h2>
-        <p className="mt-1 text-sm text-contrast/70">Fans get one vote per device. Polls can’t be edited once created; delete and recreate instead.</p>
+        <h2 className="font-heading text-xl font-bold text-contrast">{editing ? "Edit poll" : "New poll"}</h2>
+        <p className="mt-1 text-sm text-contrast/70">
+          {editing
+            ? locked
+              ? `This poll has ${editing.votes} ${editing.votes === 1 ? "vote" : "votes"}, so options can't be added or removed (that would change or delete votes). You can still fix wording, the closing time and when results show.`
+              : "No votes yet, so everything can be changed."
+            : "Fans get one vote per device."}
+        </p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Show" hint={season ? `Linked to ${season.name}.` : "No current season, so options can't link to housemates."}>
             {(id) => (
-              <Select id={id} value={showId} onChange={(e) => setShowId(e.target.value)}>
+              <Select id={id} value={showId} disabled={locked} onChange={(e) => setShowId(e.target.value)}>
                 {shows.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -203,17 +284,17 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
                     </option>
                   ))}
                 </Select>
-                <Button variant="secondary" disabled={options.length <= 2} onClick={() => setOptions(options.filter((_, j) => j !== i))} aria-label={`Remove option ${i + 1}`}>
+                <Button variant="secondary" disabled={options.length <= 2 || (locked && Boolean(option.id))} onClick={() => setOptions(options.filter((_, j) => j !== i))} aria-label={`Remove option ${i + 1}`}>
                   Remove
                 </Button>
               </div>
             ))}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button variant="secondary" disabled={options.length >= MAX_OPTIONS} onClick={() => setOptions([...options, { label: "", housemate_id: "" }])}>
+            <Button variant="secondary" disabled={options.length >= MAX_OPTIONS || locked} onClick={() => setOptions([...options, { label: "", housemate_id: "" }])}>
               Add option
             </Button>
-            {stillIn.length >= 2 && (
+            {stillIn.length >= 2 && !editing && (
               <Button variant="secondary" onClick={() => setOptions(stillIn.slice(0, MAX_OPTIONS).map((h) => ({ label: h.name, housemate_id: h.id })))}>
                 Add everyone still in the {show?.venue ?? "house"} ({stillIn.length})
               </Button>
@@ -222,12 +303,25 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
         </fieldset>
 
         <div className="mt-5 flex flex-wrap gap-3">
-          <Button onClick={() => create(true)} disabled={busy}>
-            Create and open
-          </Button>
-          <Button variant="secondary" onClick={() => create(false)} disabled={busy}>
-            Save as draft
-          </Button>
+          {editing ? (
+            <>
+              <Button onClick={saveEdit} disabled={busy}>
+                Save changes
+              </Button>
+              <Button variant="secondary" onClick={resetForm} disabled={busy}>
+                Cancel editing
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => create(true)} disabled={busy}>
+                Create and open
+              </Button>
+              <Button variant="secondary" onClick={() => create(false)} disabled={busy}>
+                Save as draft
+              </Button>
+            </>
+          )}
         </div>
         <div className="mt-3">{noticeNode}</div>
       </Card>
@@ -252,6 +346,9 @@ export default function PollsPanel({ db, userId }: { db: SupabaseClient; userId:
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" onClick={() => edit(poll)} aria-label={`Edit ${poll.question}`}>
+                    Edit
+                  </Button>
                   {poll.status !== "open" && (
                     <Button variant="secondary" onClick={() => setStatus(poll, "open")} aria-label={`Open ${poll.question}`}>
                       Open

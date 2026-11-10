@@ -26,6 +26,7 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
   const [description, setDescription] = useState("")
   const [questions, setQuestions] = useState<Draft[]>([blankQuestion()])
   const [busy, setBusy] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!showId && shows[0]) setShowId(shows[0].id)
@@ -49,6 +50,39 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
   const setOption = (qi: number, oi: number, value: string) =>
     update(qi, { options: questions[qi].options.map((o, j) => (j === oi ? value : o)) })
 
+  function resetForm() {
+    setEditId(null)
+    setTitle("")
+    setDescription("")
+    setQuestions([blankQuestion()])
+  }
+
+  // Load a quiz into the form. Quiz answers aren't stored, so any part can be changed safely.
+  async function edit(quiz: QuizRow) {
+    clear()
+    const { data, error } = await db
+      .from("quizzes")
+      .select("id, show_id, title, description, quiz_questions(id, prompt, explanation, sort_order, quiz_options(label, is_correct, sort_order))")
+      .eq("id", quiz.id)
+      .single()
+    if (error || !data) return fail("Couldn't open the quiz.", error)
+    type Q = { prompt: string; explanation: string | null; sort_order: number; quiz_options: { label: string; is_correct: boolean; sort_order: number }[] }
+    const qs = [...((data.quiz_questions ?? []) as Q[])].sort((a, b) => a.sort_order - b.sort_order)
+    setEditId(data.id)
+    setShowId(data.show_id)
+    setTitle(data.title)
+    setDescription(data.description ?? "")
+    setQuestions(
+      qs.length
+        ? qs.map((q) => {
+            const opts = [...q.quiz_options].sort((a, b) => a.sort_order - b.sort_order)
+            return { prompt: q.prompt, explanation: q.explanation ?? "", options: opts.map((o) => o.label), correct: Math.max(0, opts.findIndex((o) => o.is_correct)) }
+          })
+        : [blankQuestion()],
+    )
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   async function create(publish: boolean) {
     clear()
     if (!showId) return fail("Choose a show.")
@@ -60,22 +94,24 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
       if (!q.options[q.correct]?.trim()) return fail(`Question ${i + 1}: the answer marked correct is empty.`)
     }
     setBusy(true)
-    const { data: quiz, error } = await db
-      .from("quizzes")
-      .insert({
-        show_id: showId,
-        title: title.trim(),
-        description: description.trim() || null,
-        status: publish ? "published" : "draft",
-        published_at: publish ? new Date().toISOString() : null,
-        created_by: userId,
-      })
-      .select("id")
-      .single()
+    const existing = editId ? quizzes.find((q) => q.id === editId) : undefined
+    const fields = {
+      show_id: showId,
+      title: title.trim(),
+      description: description.trim() || null,
+      status: publish ? "published" : "draft",
+      published_at: publish ? (existing?.published_at ?? new Date().toISOString()) : null,
+    }
+    const { data: quiz, error } = editId
+      ? await db.from("quizzes").update(fields).eq("id", editId).select("id").single()
+      : await db.from("quizzes").insert({ ...fields, created_by: userId }).select("id").single()
     if (error || !quiz) {
       setBusy(false)
-      return fail("Couldn't create the quiz.", error)
+      return fail(editId ? "Couldn't save the quiz." : "Couldn't create the quiz.", error)
     }
+    // When editing, remember the old questions: they're removed only after the new ones are saved.
+    const { data: oldQuestions } = editId ? await db.from("quiz_questions").select("id").eq("quiz_id", quiz.id) : { data: [] }
+    const added: string[] = []
     try {
       for (const [i, q] of questions.entries()) {
         const { data: question, error: qError } = await db
@@ -84,6 +120,7 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
           .select("id")
           .single()
         if (qError || !question) throw qError
+        added.push(question.id)
         const rows = q.options
           .map((label, j) => ({ label: label.trim(), is_correct: j === q.correct, sort_order: j + 1 }))
           .filter((o) => o.label)
@@ -92,15 +129,28 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
         if (oError) throw oError
       }
     } catch (e) {
-      await db.from("quizzes").delete().eq("id", quiz.id) // don't leave a half-saved quiz
+      // Don't leave a half-saved quiz: a new quiz is removed; an edited one keeps its old questions.
+      if (editId) {
+        if (added.length) await db.from("quiz_questions").delete().in("id", added)
+      } else {
+        await db.from("quizzes").delete().eq("id", quiz.id)
+      }
       setBusy(false)
       return fail("Couldn't save the quiz questions.", e as { message?: string })
     }
+    const oldIds = ((oldQuestions ?? []) as { id: string }[]).map((q) => q.id)
+    if (oldIds.length) await db.from("quiz_questions").delete().in("id", oldIds)
     setBusy(false)
-    ok(publish ? "Quiz published. It appears on the show page within a minute." : "Quiz saved as a draft.")
-    setTitle("")
-    setDescription("")
-    setQuestions([blankQuestion()])
+    ok(
+      editId
+        ? publish
+          ? "Quiz updated. Changes appear on the site within a minute."
+          : "Quiz saved as a draft."
+        : publish
+          ? "Quiz published. It appears on the show page within a minute."
+          : "Quiz saved as a draft.",
+    )
+    resetForm()
     load()
   }
 
@@ -118,6 +168,7 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
     if (!window.confirm(`Delete "${quiz.title}"? This can't be undone.`)) return
     const { error } = await db.from("quizzes").delete().eq("id", quiz.id)
     if (error) return fail("Couldn't delete the quiz.", error)
+    if (editId === quiz.id) resetForm()
     ok("Quiz deleted.")
     load()
   }
@@ -127,7 +178,7 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
   return (
     <div className="space-y-6">
       <Card>
-        <h2 className="font-heading text-xl font-bold text-contrast">New quiz</h2>
+        <h2 className="font-heading text-xl font-bold text-contrast">{editId ? `Edit quiz: ${title || "untitled"}` : "New quiz"}</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Show">
             {(id) => (
@@ -207,11 +258,16 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
 
         <div className="mt-5 flex flex-wrap gap-3">
           <Button onClick={() => create(true)} disabled={busy}>
-            Publish quiz
+            {editId ? "Save and publish" : "Publish quiz"}
           </Button>
           <Button variant="secondary" onClick={() => create(false)} disabled={busy}>
             Save as draft
           </Button>
+          {editId && (
+            <Button variant="secondary" onClick={resetForm} disabled={busy}>
+              Cancel editing
+            </Button>
+          )}
         </div>
         <div className="mt-3">{noticeNode}</div>
       </Card>
@@ -232,6 +288,9 @@ export default function QuizzesPanel({ db, userId }: { db: SupabaseClient; userI
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" onClick={() => edit(quiz)} aria-label={`Edit ${quiz.title}`}>
+                    Edit
+                  </Button>
                   <Button variant="secondary" onClick={() => setPublished(quiz, quiz.status !== "published")} aria-label={`${quiz.status === "published" ? "Unpublish" : "Publish"} ${quiz.title}`}>
                     {quiz.status === "published" ? "Unpublish" : "Publish"}
                   </Button>
