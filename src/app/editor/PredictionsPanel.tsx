@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { Button, Card, Field, Select, TextInput, currentSeason, formatDate, useNotice, useShows, type EditorHousemate } from "./fields"
+import { Button, Card, Field, Select, TextInput, currentSeason, formatDate, toLocalInput, useNotice, useShows, type EditorHousemate } from "./fields"
 
 interface RoundRow {
   id: string
@@ -14,7 +14,7 @@ interface RoundRow {
   prediction_options: { id: string; label: string; is_correct: boolean; sort_order: number }[]
 }
 
-type Option = { label: string; housemate_id: string }
+type Option = { id?: string; label: string; housemate_id: string } // id: an option that already exists
 const MAX_OPTIONS = 50
 const blank = (): Option[] => [
   { label: "", housemate_id: "" },
@@ -72,6 +72,10 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
   const [season, setSeason] = useState<{ id: string; name: string } | null>(null)
   const [housemates, setHousemates] = useState<EditorHousemate[]>([])
   const [busy, setBusy] = useState(false)
+  // Editing: the round being changed, its picks per option, and what it started as.
+  const [editing, setEditing] = useState<{ id: string; status: RoundRow["status"]; picks: Record<string, number>; optionIds: string[]; points: number; locksAt: string } | null>(null)
+  const totalPicks = editing ? Object.values(editing.picks).reduce((a, b) => a + b, 0) : 0
+  const resolved = editing?.status === "resolved"
   const show = shows.find((s) => s.id === showId)
   const stillIn = housemates.filter((h) => h.status === "in_house")
 
@@ -147,6 +151,85 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
     load()
   }
 
+  function resetForm() {
+    setEditing(null)
+    setQuestion("Who will be evicted this week?")
+    setPoints("10")
+    setLocksAt("")
+    setOptions(blank())
+  }
+
+  async function edit(r: RoundRow) {
+    clear()
+    const { data, error } = await db
+      .from("prediction_rounds")
+      .select("id, show_id, question, points, locks_at, status, prediction_options(id, label, housemate_id, sort_order)")
+      .eq("id", r.id)
+      .single()
+    if (error || !data) return fail("Couldn't open the round.", error)
+    const { data: counts } = await db.rpc("round_pick_counts", { p_round_id: r.id })
+    const picksByOption = Object.fromEntries(((counts ?? []) as { option_id: string; picks: number }[]).map((c) => [c.option_id, Number(c.picks)]))
+    const opts = [...(data.prediction_options as { id: string; label: string; housemate_id: string | null; sort_order: number }[])].sort((a, b) => a.sort_order - b.sort_order)
+    setShowId(data.show_id)
+    setQuestion(data.question)
+    setPoints(String(data.points))
+    setLocksAt(toLocalInput(data.locks_at))
+    setOptions(opts.map((o) => ({ id: o.id, label: o.label, housemate_id: o.housemate_id ?? "" })))
+    setEditing({ id: data.id, status: data.status, picks: picksByOption, optionIds: opts.map((o) => o.id), points: data.points, locksAt: toLocalInput(data.locks_at) })
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  // Saving an edit: existing options are updated in place, so fans' picks are kept.
+  async function saveEdit() {
+    if (!editing) return
+    clear()
+    const filled = options.filter((o) => o.label.trim())
+    const pts = Number(points)
+    if (!question.trim()) return fail("Add a question.")
+    if (filled.length < 2) return fail("Keep at least two options.")
+    if (!Number.isInteger(pts) || pts < 1 || pts > 100) return fail("Points must be a whole number from 1 to 100.")
+    if (!locksAt) return fail("Set when picks lock.")
+    if (!resolved && locksAt !== editing.locksAt && new Date(locksAt).getTime() <= Date.now()) return fail("The new lock time is in the past.")
+    if (options.some((o) => o.id && !o.label.trim())) return fail("An existing option can't be left empty: fix its wording instead.")
+    if (resolved && pts !== editing.points && !window.confirm(`Change this decided round from ${editing.points} to ${pts} points? Everyone who got it right is re-scored on the leaderboard straight away.`)) return
+    setBusy(true)
+    const { error } = await db
+      .from("prediction_rounds")
+      .update({
+        ...(totalPicks === 0 ? { show_id: showId } : {}),
+        question: question.trim(),
+        points: pts,
+        ...(resolved ? {} : { locks_at: new Date(locksAt).toISOString() }),
+      })
+      .eq("id", editing.id)
+    if (error) {
+      setBusy(false)
+      return fail("Couldn't save the round.", error)
+    }
+    try {
+      for (const [i, o] of filled.entries()) {
+        const row = { label: o.label.trim(), housemate_id: o.housemate_id || null, sort_order: i + 1 }
+        const { error: oError } = o.id
+          ? await db.from("prediction_options").update(row).eq("id", o.id)
+          : await db.from("prediction_options").insert({ ...row, round_id: editing.id })
+        if (oError) throw oError
+      }
+      // Options taken out of the list are deleted, but never one that a fan picked.
+      const dropped = editing.optionIds.filter((id) => !options.some((o) => o.id === id) && !editing.picks[id])
+      if (dropped.length) {
+        const { error: dError } = await db.from("prediction_options").delete().in("id", dropped)
+        if (dError) throw dError
+      }
+    } catch (e) {
+      setBusy(false)
+      return fail("Couldn't save the options.", e as { message?: string })
+    }
+    setBusy(false)
+    ok(resolved && pts !== editing.points ? "Round updated and the leaderboard re-scored." : "Round updated. Changes appear on the site within a minute.")
+    resetForm()
+    load()
+  }
+
   async function openRound(r: RoundRow) {
     const { error } = await db.from("prediction_rounds").update({ status: "open" }).eq("id", r.id)
     if (error) return fail("Couldn't open the round.", error)
@@ -158,6 +241,7 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
     if (!window.confirm(`Delete "${r.question}" and all its picks? Points from it are removed from the leaderboard. This can't be undone.`)) return
     const { error } = await db.from("prediction_rounds").delete().eq("id", r.id)
     if (error) return fail("Couldn't delete the round.", error)
+    if (editing?.id === r.id) resetForm()
     ok("Round deleted.")
     load()
   }
@@ -169,14 +253,20 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
   return (
     <div className="space-y-6">
       <Card>
-        <h2 className="font-heading text-xl font-bold text-contrast">New prediction round</h2>
+        <h2 className="font-heading text-xl font-bold text-contrast">{editing ? "Edit prediction round" : "New prediction round"}</h2>
         <p className="mt-1 text-sm text-contrast/70">
-          Signed-in fans pick one answer and can change it until picks lock. Lock picks before the live show starts.
+          {editing
+            ? totalPicks > 0
+              ? `${totalPicks} ${totalPicks === 1 ? "fan has" : "fans have"} picked. You can fix wording${resolved ? " and points" : ", the lock time and points, and add options"}, but options someone picked can't be removed.`
+              : resolved
+                ? "This round is decided. You can fix wording and points."
+                : "No picks yet, so everything can be changed."
+            : "Signed-in fans pick one answer and can change it until picks lock. Lock picks before the live show starts."}
         </p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Show" hint={season ? `Counts towards the ${season.name} leaderboard.` : "No current season: the leaderboard counts all rounds for this show."}>
             {(id) => (
-              <Select id={id} value={showId} onChange={(e) => setShowId(e.target.value)}>
+              <Select id={id} value={showId} disabled={totalPicks > 0} onChange={(e) => setShowId(e.target.value)}>
                 {shows.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -187,7 +277,7 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
           </Field>
           <div className="grid grid-cols-[6rem_1fr] gap-3">
             <Field label="Points">{(id) => <TextInput id={id} type="number" min={1} max={100} value={points} onChange={(e) => setPoints(e.target.value)} />}</Field>
-            <Field label="Picks lock at">{(id) => <TextInput id={id} type="datetime-local" value={locksAt} onChange={(e) => setLocksAt(e.target.value)} />}</Field>
+            <Field label="Picks lock at">{(id) => <TextInput id={id} type="datetime-local" value={locksAt} disabled={resolved} onChange={(e) => setLocksAt(e.target.value)} />}</Field>
           </div>
           <div className="sm:col-span-2">
             <Field label="Question" hint={`${question.length}/200`}>
@@ -217,17 +307,23 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
                     </option>
                   ))}
                 </Select>
-                <Button variant="secondary" disabled={options.length <= 2} onClick={() => setOptions(options.filter((_, j) => j !== i))} aria-label={`Remove option ${i + 1}`}>
+                <Button
+                  variant="secondary"
+                  disabled={options.length <= 2 || Boolean(option.id && editing?.picks[option.id])}
+                  onClick={() => setOptions(options.filter((_, j) => j !== i))}
+                  aria-label={`Remove option ${i + 1}`}
+                  title={option.id && editing?.picks[option.id] ? "A fan picked this option, so it can't be removed" : undefined}
+                >
                   Remove
                 </Button>
               </div>
             ))}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button variant="secondary" disabled={options.length >= MAX_OPTIONS} onClick={() => setOptions([...options, { label: "", housemate_id: "" }])}>
+            <Button variant="secondary" disabled={options.length >= MAX_OPTIONS || resolved} onClick={() => setOptions([...options, { label: "", housemate_id: "" }])}>
               Add option
             </Button>
-            {stillIn.length >= 2 && (
+            {stillIn.length >= 2 && !editing && (
               <Button variant="secondary" onClick={() => setOptions(stillIn.slice(0, MAX_OPTIONS).map((h) => ({ label: h.name, housemate_id: h.id })))}>
                 Add everyone still in the {show?.venue ?? "house"} ({stillIn.length})
               </Button>
@@ -235,12 +331,25 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
           </div>
         </fieldset>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Button onClick={() => create(true)} disabled={busy}>
-            Create and open
-          </Button>
-          <Button variant="secondary" onClick={() => create(false)} disabled={busy}>
-            Save as draft
-          </Button>
+          {editing ? (
+            <>
+              <Button onClick={saveEdit} disabled={busy}>
+                Save changes
+              </Button>
+              <Button variant="secondary" onClick={resetForm} disabled={busy}>
+                Cancel editing
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => create(true)} disabled={busy}>
+                Create and open
+              </Button>
+              <Button variant="secondary" onClick={() => create(false)} disabled={busy}>
+                Save as draft
+              </Button>
+            </>
+          )}
         </div>
         <div className="mt-3">{node}</div>
       </Card>
@@ -262,6 +371,9 @@ export default function PredictionsPanel({ db, userId }: { db: SupabaseClient; u
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" onClick={() => edit(r)} aria-label={`Edit ${r.question}`}>
+                      Edit
+                    </Button>
                     {r.status === "draft" && (
                       <Button variant="secondary" onClick={() => openRound(r)} aria-label={`Open ${r.question}`}>
                         Open
