@@ -32,6 +32,7 @@ export interface ShowRef {
   name: string
   short_name: string | null
   accent_color: string | null
+  is_active?: boolean
 }
 
 export interface Post {
@@ -86,7 +87,7 @@ export interface RankingCategory {
 }
 
 const SHOW_FIELDS = "id, slug, name, short_name, country, status, tagline, accent_color, cast_singular, cast_plural, venue, image_url"
-const SHOW_REF = "show:shows(slug, name, short_name, accent_color)"
+const SHOW_REF = "show:shows(slug, name, short_name, accent_color, is_active)"
 const POST_FIELDS = `id, slug, image_url, kind, title, summary, source_name, source_url, published_at, ${SHOW_REF}`
 
 function report(where: string, error: unknown) {
@@ -95,7 +96,8 @@ function report(where: string, error: unknown) {
 
 export async function getShows(): Promise<Show[] | null> {
   if (!supabase) return null
-  const { data, error } = await supabase.from("shows").select(SHOW_FIELDS).order("sort_order")
+  // Inactive shows are hidden from the public site (editors manage them separately).
+  const { data, error } = await supabase.from("shows").select(SHOW_FIELDS).eq("is_active", true).order("sort_order")
   report("getShows", error)
   if (error) return null
   return (data ?? []) as Show[]
@@ -104,7 +106,7 @@ export async function getShows(): Promise<Show[] | null> {
 // available = false means the database could not be reached (not "no such show").
 export async function getShowBySlug(slug: string): Promise<{ show: Show | null; available: boolean }> {
   if (!supabase) return { show: null, available: false }
-  const { data, error } = await supabase.from("shows").select(SHOW_FIELDS).eq("slug", slug).maybeSingle()
+  const { data, error } = await supabase.from("shows").select(SHOW_FIELDS).eq("slug", slug).eq("is_active", true).maybeSingle()
   report("getShowBySlug", error)
   if (error) return { show: null, available: false }
   return { show: (data as Show | null) ?? null, available: true }
@@ -121,11 +123,12 @@ export async function getTopStories(limit = 6): Promise<Post[]> {
     .select(POST_FIELDS)
     .in("kind", TOP_STORY_KINDS)
     .order("published_at", { ascending: false })
-    .limit(limit)
+    .limit(limit * 2)
   if (!SHOW_SAMPLES) query = query.eq("is_sample", false)
   const { data, error } = await query
   report("getTopStories", error)
-  return (data ?? []) as unknown as Post[]
+  // Leave out news about inactive shows.
+  return ((data ?? []) as unknown as Post[]).filter((p) => p.show?.is_active !== false).slice(0, limit)
 }
 
 export async function getShowPosts(showId: string, limit = 12): Promise<Post[]> {
@@ -473,9 +476,9 @@ export async function getActivePrompts(showId?: string): Promise<WritingPrompt[]
   if (!supabase) return []
   let query = supabase.from("writing_prompts").select(`id, title, prompt, ${SHOW_REF}`).eq("status", "active").order("created_at", { ascending: false })
   if (showId) query = query.or(`show_id.eq.${showId},show_id.is.null`)
-  const { data, error } = await query.limit(5)
+  const { data, error } = await query.limit(10)
   report("getActivePrompts", error)
-  return (data ?? []) as unknown as WritingPrompt[]
+  return ((data ?? []) as unknown as WritingPrompt[]).filter((p) => p.show?.is_active !== false).slice(0, 5)
 }
 
 export async function getStoryReactions(storyId: string): Promise<Record<string, number>> {

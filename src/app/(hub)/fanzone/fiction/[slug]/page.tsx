@@ -52,7 +52,7 @@ export default async function FanStoryPage({ params }: Params) {
   if (!story) notFound()
   const [reactions, chapters] = await Promise.all([getStoryReactions(story.id), getStoryChapters(story.id)])
 
-  const back = story.show ? { href: `/fanzone/${story.show.slug}`, label: story.show.name } : { href: "/fanzone", label: "Reality Reloaded" }
+  const back = story.show && story.show.is_active !== false ? { href: `/fanzone/${story.show.slug}`, label: story.show.name } : { href: "/fanzone", label: "Reality Reloaded" }
   const reportHref = CONTACT_EMAIL
     ? `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Report: ${story.title}`)}&body=${encodeURIComponent(`Story: /fanzone/fiction/${story.slug}\n\nWhat's the problem?\n`)}`
     : null

@@ -39,6 +39,8 @@ function ShowRow({ db, show, onSaved }: { db: SupabaseClient; show: EditorShow; 
   const [singular, setSingular] = useState(show.cast_singular)
   const [plural, setPlural] = useState(show.cast_plural)
   const [venue, setVenue] = useState(show.venue)
+  const [country, setCountry] = useState(show.country ?? "")
+  const [accent, setAccent] = useState(show.accent_color ?? "#0066FF")
   const [uploading, setUploading] = useState(false)
   const BUCKET = "post-images"
   const pathOf = (url: string | null) => (url ? url.split(`/object/public/${BUCKET}/`)[1] : undefined)
@@ -76,19 +78,43 @@ function ShowRow({ db, show, onSaved }: { db: SupabaseClient; show: EditorShow; 
     onSaved()
   }
 
+  async function setActive(active: boolean) {
+    if (!active && !window.confirm(`Hide ${show.name} from the site? Its card, page and news disappear for visitors until you switch it back on. Nothing is deleted.`)) return
+    const { error } = await db.from("shows").update({ is_active: active }).eq("id", show.id)
+    if (error) return fail("Couldn't change the show.", error)
+    ok(active ? `${show.name} is back on the site.` : `${show.name} is hidden from the site.`)
+    onSaved()
+  }
+
   async function save() {
     if (!singular.trim() || !plural.trim()) return fail("Fill in both cast words.")
     const { error } = await db
       .from("shows")
-      .update({ status, tagline: tagline.trim() || null, cast_singular: singular.trim(), cast_plural: plural.trim(), venue })
+      .update({ status, tagline: tagline.trim() || null, cast_singular: singular.trim(), cast_plural: plural.trim(), venue, country: country.trim() || null, accent_color: accent })
       .eq("id", show.id)
     if (error) return fail("Couldn't save.", error)
     ok("Saved.")
     onSaved()
   }
   return (
-    <li className="space-y-3 py-4">
-      <p className="font-medium text-contrast">{show.name}</p>
+    <li className={`space-y-3 py-4 ${show.is_active ? "" : "opacity-80"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="font-medium text-contrast">
+          {show.name}
+          {!show.is_active && <span className="ml-2 rounded-md bg-contrast/10 px-2 py-0.5 text-xs font-normal text-contrast/80">Hidden from the site</span>}
+        </p>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-contrast">
+          <input
+            type="checkbox"
+            role="switch"
+            aria-checked={show.is_active}
+            checked={show.is_active}
+            onChange={(e) => setActive(e.target.checked)}
+            className="h-4 w-4 accent-[#0066FF]"
+          />
+          Active on the site
+        </label>
+      </div>
       <div className="grid gap-3 sm:grid-cols-[14rem_1fr]">
         <Field label="Status">
           {(id) => (
@@ -103,6 +129,12 @@ function ShowRow({ db, show, onSaved }: { db: SupabaseClient; show: EditorShow; 
         </Field>
         <Field label="Tagline">
           {(id) => <TextInput id={id} value={tagline} maxLength={160} onChange={(e) => setTagline(e.target.value)} />}
+        </Field>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-[1fr_5rem]">
+        <Field label="Country">{(id) => <TextInput id={id} value={country} maxLength={40} placeholder="Nigeria" onChange={(e) => setCountry(e.target.value)} />}</Field>
+        <Field label="Colour">
+          {(id) => <input id={id} type="color" value={accent} onChange={(e) => setAccent(e.target.value)} className="h-10 w-full cursor-pointer rounded-lg border border-contrast/20 bg-base p-1" />}
         </Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_10rem_auto] sm:items-end">
@@ -277,7 +309,7 @@ export default function ShowsPanel({ db }: { db: SupabaseClient }) {
         <p className="mt-1 text-sm text-contrast/70">Set each show&apos;s status as seasons start and end, and the words the site uses for its cast.</p>
         <ul className="mt-2 divide-y divide-contrast/10">
           {shows.map((show) => (
-            <ShowRow key={`${show.id}-${show.status}-${show.tagline}-${show.cast_plural}-${show.venue}-${show.image_url}`} db={db} show={show} onSaved={reload} />
+            <ShowRow key={`${show.id}-${show.status}-${show.tagline}-${show.cast_plural}-${show.venue}-${show.image_url}-${show.country}-${show.accent_color}-${show.is_active}`} db={db} show={show} onSaved={reload} />
           ))}
         </ul>
         <AddShow db={db} onAdded={reload} />
